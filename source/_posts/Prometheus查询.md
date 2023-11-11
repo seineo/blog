@@ -7,9 +7,7 @@ tags:
 
 
 
-### Prometheus查询——从压测分析的延迟分位数说起
-
-在使用Locust进行压测或使用Kiali监控服务时，都会有着平均延迟、第95百分位(95th percentile，简写为P95)延迟这些概念，需要平均延迟好理解，P95延迟是什么意思呢？为什么需要这个时间？
+在使用Locust进行压测或使用Kiali监控服务时，都会有着平均延迟、第95百分位(95th percentile，简写为P95)延迟这些概念。平均延迟好理解，P95延迟是什么意思呢？为什么需要这个时间？
 
 <img src="https://oss.seineo.cn/images/202311112153400.png" alt="image-20230921151042328" style="zoom:50%;" />
 
@@ -23,7 +21,7 @@ P95延迟表示95%的请求延迟低于这个值，这个值可以让我们对�
 
 
 
-#### 数据类型
+## 数据类型
 
 在prometheus的查询语言PromQL中，一个表达式可以表达以下四种数据类型的一种：
 
@@ -32,14 +30,14 @@ P95延迟表示95%的请求延迟低于这个值，这个值可以让我们对�
 - 标量（Scalar）：浮点数值。
 - 字符串（String）：字符串值，暂未使用。
 
-#### 时序选择器
+## 时序选择器
 
 常用的选择器就两种：
 
 - 瞬时向量选择器：指标名+标签，如`http_requests_total{job="prometheus",group="canary"}`，其中`http_requests_total`是指标名，`{a=1,b=2}`这类大括号中用逗号分隔的列表就是添加的标签。因此这一查询语句的含义就是找到标签job为prometheus、group为canary的`http_requests_total`指标。
 - 区间向量选择器：与瞬时向量选择器类似，在语法上，只需在选择器末尾附加一个方括号，以指定向前提取的时间窗口大小。如`http_requests_total{job="prometheus",group="canary"}[5m]`就是获取对应指标前5分钟时间窗口的时序数据。
 
-#### 操作符
+## 操作符
 
 PromQL支持算术、逻辑、比较等运算符，为了解释前文中的查询语句，这里重点介绍聚集运算符（Aggregation operators），用于按某些维度聚集指标向量并生成新的结果向量。比如
 
@@ -50,7 +48,7 @@ PromQL支持算术、逻辑、比较等运算符，为了解释前文中的查�
 - count：计数
 - ...
 
-#### 指标类型
+## 指标类型
 
 **注**：指标的类型只是客户端库中的概念，prometheus服务端存储指标时并不区分。
 
@@ -65,7 +63,7 @@ Prometheus一共有四种指标：
   3. `<basename>_count`：观测到的事件数，等价于`<basename_bucket{le="+Inf"}`。
 - summary：与histogram功能类似但是比histogram出现的早，更推荐histogram，因为histogram是可聚集（aggregatable）的而summary不可聚集。另一个不同在于，histogram是在服务端进行计算的，而summary在客户端计算。
 
-##### histogram详解
+### histogram详解
 
 其实前文中histogram给出的是官方的描述，第一次接触可能并不完全能懂。如下图所示，与一般的直方图不同，prometheus中的histogram是一个累积的直方图。为什么使用累积直方图，并没有查到官方的解释，个人认为主要是统计意义，相当于给出了**分布函数**，方便计算最大值、最小值与分位点等等。
 
@@ -85,11 +83,11 @@ return bucket.Lower + (bucket.Upper-bucket.Lower)*(rank/bucket.Count)
 
 由于假定线性分布，将因此会有误差，对于减小分位数误差的指标选择与处理方法见[errors-of-quantile-estimation](https://prometheus.io/docs/practices/histograms/#errors-of-quantile-estimation)。
 
-#### 函数
+## 函数
 
 这里介绍几个常用的、而且前文中查询语句用到了的函数。
 
-##### rate与irate
+### rate与irate
 
 ![截屏2023-09-26 20.37.06](https://oss.seineo.cn/images/202311112153483.png)
 
@@ -114,7 +112,7 @@ irate(http_requests_total[5m])
 - rate适合观察长时间的趋势以及用于告警，因为瞬时增长并不一定是异常。
 - irate适合观察实时变化，若使用rate计算快速变化的样本平均增长率，容易陷入**长尾问题**（这个问题也可以通过看histogram或者summary来分析解决），因为它用平均值将峰值削平了，无法反映时间窗口内样本数据的快速变化。
 
-##### histogram_quantile
+### histogram_quantile
 
 `histogram_quantile(φ scalar, b instant-vector)`计算一个直方图瞬时向量b的百分比φ(0<=φ<=1)，比如φ=0.95，就表示计算P95。 以指标`http_request_duration_seconds`为例，它的指标类型为histogram，如前文所数，它会暴露一个名为`http_request_duration_seconds_bucket`的指标，记录了各个桶的频数分布。那么我们就可以使用以下PromQL得到**前10分钟平均新增请求持续时间的分布**：
 
@@ -138,7 +136,7 @@ histogram_quantile(0.9, sum by (le, namespace) rate(http_request_duration_second
 
 
 
-#### 查询语句回顾
+## 查询语句回顾
 
 有了上述知识，我们就可以弄清文章开头提到的PromQL的含义了。
 
