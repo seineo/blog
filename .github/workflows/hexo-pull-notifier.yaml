@@ -5,8 +5,13 @@ jobs:
   Notify:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       - name: Post data to backend server.
-        run: |
-          curl https://seineo.cn/hexo-puller --header 'Content-Type: application/json' --data '{"repoUrl": "https://github.com/seineo/blog.git", "targetDir":"/home/lyw"}'
+        run: >
+          status_code=$(curl -s -o /dev/null -w "%{http_code}" https://seineo.cn/hexo-puller --header 'Content-Type: application/json' --data '{"repoUrl": "https://github.com/seineo/blog.git", "targetDir":"/home/lyw"}');
+          if [$status_code -ne "200"]; then
+            echo "Error: status code is ${status_code}"
+            exit 1
+          else 
+            echo "Success."
+          fi
       - run: echo "🍏 This job's status is ${{ job.status }}."
