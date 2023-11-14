@@ -1,0 +1,12 @@
+name: Hexo Pull Notifier
+run-name: Notify the server to pull the repository to update the blog content.
+on: [push]
+jobs:
+  Notify:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - name: Post data to backend server.
+        run: |
+          curl https://seineo.cn/hexo-puller --header 'Content-Type: application/json' --data '{"repoUrl": "https://github.com/seineo/blog.git", "targetDir":"/home/lyw"}'
+      - run: echo "🍏 This job's status is ${{ job.status }}."
