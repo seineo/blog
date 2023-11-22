@@ -325,7 +325,7 @@ body .h1 {
   letter-spacing: 0.01em;
   font-weight: 700;
   font-style: normal;
-  font-size: 1.5em;
+  font-size: 1.8em;
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
 }
@@ -339,13 +339,13 @@ body .h2 {
   text-transform: none;
   letter-spacing: normal;
   font-weight: bold;
-  font-size: 1rem;
+  font-size: 1.5rem;
 }
 body h3 {
   color: rgba(86,124,119,0.8);
   text-decoration: underline;
   font-weight: bold;
-  font-size: 0.9rem;
+  font-size: 1.2rem;
 }
 body h4,
 body h5,
@@ -601,7 +601,7 @@ body {
   letter-spacing: 0.01em;
   font-weight: 700;
   font-style: normal;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   line-height: 2rem;
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
@@ -628,7 +628,7 @@ body {
   letter-spacing: 0.01em;
   font-weight: 200;
   font-style: normal;
-  font-size: 0.8rem;
+  font-size: 1rem;
 }
 #header #nav ul {
   margin: 0;
@@ -846,7 +846,7 @@ body {
 }
 #header-post #toc .toc-level-2 {
   color: #22272a;
-  font-size: 0.8rem;
+  font-size: 1rem;
 }
 #header-post #toc .toc-level-2:before {
   color: #cc2a41;
@@ -854,11 +854,11 @@ body {
 }
 #header-post #toc .toc-level-3 {
   color: #666;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
 }
 #header-post #toc .toc-level-4 {
   color: #525252;
-  font-size: 0.4rem;
+  font-size: 0.7rem;
 }
 #header-post #toc .toc-level-5 {
   display: none;
@@ -1067,7 +1067,7 @@ body {
   margin-right: 16px;
   min-width: 100px;
   color: #666;
-  font-size: 14px;
+  font-size: 18px;
 }
 @media (min-width: 480px) {
   .post-list .post-item {
@@ -1114,11 +1114,11 @@ article header .postdate {
 article .content h2:before {
   position: absolute;
   top: -4px;
-  left: -1rem;
+  left: -2rem;
   color: #cc2a41;
   content: "#";
   font-weight: bold;
-  font-size: 1.2rem;
+  font-size: 1.8rem;
 }
 article .content img,
 article .content video {
@@ -1165,7 +1165,7 @@ article .content blockquote:before {
 article .content blockquote footer {
   margin: line-height 0;
   color: #666;
-  font-size: 12px;
+  font-size: 15px;
 }
 article .content blockquote footer a {
   background-image: linear-gradient(transparent, transparent 5px, #666 5px, #666);
@@ -1246,7 +1246,7 @@ article .content .caption {
   margin-right: 16px;
   min-width: 100px;
   color: #666;
-  font-size: 14px;
+  font-size: 18px;
 }
 @media (min-width: 480px) {
   #archive .post-list .post-item {
@@ -1269,7 +1269,7 @@ article .content .caption {
   color: #666;
   vertical-align: top;
   text-align: center;
-  font-size: 12px;
+  font-size: 15px;
 }
 #footer ul {
   margin: 0;
@@ -1596,9 +1596,9 @@ pre {
   padding-bottom: 0;
   border: 1px dotted #666;
   border-radius: 4px;
-  font-size: 18px;
+  font-size: 16px;
   font-family: "Menlo", "Meslo LG", monospace;
-  line-height: 22px;
+  line-height: 24px;
   -webkit-border-radius: 4px;
 }
 pre code {
