@@ -15,11 +15,11 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://oss.seineo.cn/images/202311112153400.png">
 <meta property="og:image" content="https://oss.seineo.cn/images/202311112153423.png">
-<meta property="og:image" content="https://oss.seineo.cn/images/202311112153444.png">
 <meta property="og:image" content="https://oss.seineo.cn/images/202311112153483.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202311222030173.png">
 <meta property="og:image" content="https://oss.seineo.cn/images/202311112153522.png">
 <meta property="article:published_time" content="2023-09-27T07:41:28.000Z">
-<meta property="article:modified_time" content="2023-11-14T13:47:58.970Z">
+<meta property="article:modified_time" content="2023-11-22T12:46:15.423Z">
 <meta property="article:author" content="seineo">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://oss.seineo.cn/images/202311112153400.png">
@@ -87,6 +87,8 @@
     <span id="actions">
       <ul>
         
+        <li><a class="icon" aria-label="上一篇" href="/2023/11/21/%E5%AD%97%E7%AC%A6%E7%BC%96%E7%A0%81/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
         
         <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
         <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
@@ -116,7 +118,7 @@
     
     
       <div id="toc">
-        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="toc-number">1.</span> <span class="toc-text">数据类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%97%B6%E5%BA%8F%E9%80%89%E6%8B%A9%E5%99%A8"><span class="toc-number">2.</span> <span class="toc-text">时序选择器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%93%8D%E4%BD%9C%E7%AC%A6"><span class="toc-number">3.</span> <span class="toc-text">操作符</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8C%87%E6%A0%87%E7%B1%BB%E5%9E%8B"><span class="toc-number">4.</span> <span class="toc-text">指标类型</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#histogram%E8%AF%A6%E8%A7%A3"><span class="toc-number">4.1.</span> <span class="toc-text">histogram详解</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%BD%E6%95%B0"><span class="toc-number">5.</span> <span class="toc-text">函数</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#rate%E4%B8%8Eirate"><span class="toc-number">5.1.</span> <span class="toc-text">rate与irate</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#histogram-quantile"><span class="toc-number">5.2.</span> <span class="toc-text">histogram_quantile</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2%E8%AF%AD%E5%8F%A5%E5%9B%9E%E9%A1%BE"><span class="toc-number">6.</span> <span class="toc-text">查询语句回顾</span></a></li></ol>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="toc-number">1.</span> <span class="toc-text">数据类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%97%B6%E5%BA%8F%E9%80%89%E6%8B%A9%E5%99%A8"><span class="toc-number">2.</span> <span class="toc-text">时序选择器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%93%8D%E4%BD%9C%E7%AC%A6"><span class="toc-number">3.</span> <span class="toc-text">操作符</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8C%87%E6%A0%87%E7%B1%BB%E5%9E%8B"><span class="toc-number">4.</span> <span class="toc-text">指标类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%BD%E6%95%B0"><span class="toc-number">5.</span> <span class="toc-text">函数</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#rate%E4%B8%8Eirate"><span class="toc-number">5.1.</span> <span class="toc-text">rate与irate</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#histogram-quantile"><span class="toc-number">5.2.</span> <span class="toc-text">histogram_quantile</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2%E8%AF%AD%E5%8F%A5%E5%9B%9E%E9%A1%BE"><span class="toc-number">6.</span> <span class="toc-text">查询语句回顾</span></a></li></ol>
       </div>
     
   </span>
@@ -160,10 +162,10 @@
 <img src="https://oss.seineo.cn/images/202311112153400.png" alt="image-20230921151042328" style="zoom:50%;" />
 
 <p>P95延迟表示95%的请求延迟低于这个值，这个值可以让我们对网络或应用程序的实际性能特征有了更加现实和直观的理解，使我们的应用能够迎合更广泛的受众，而平均响应时间则可能会因为一些极端的值而产生严重偏差。</p>
-<p>开源工具可以帮助我们计算这些指标，那么如果我们自己想通过prometheus收集，又该如何使用PromQL来表示呢？kiali中计算P95响应时间的PromQL为：</p>
+<p>开源工具可以帮助我们计算这些指标，那么如果我们自己想通过Prometheus收集，又该如何使用PromQL来表示呢？kiali中计算P95响应时间的PromQL为：</p>
 <p><img src="https://oss.seineo.cn/images/202311112153423.png" alt="截屏2023-09-27 10.59.53"></p>
 <p>为了明白这一查询语句的意思，需要先学习Prometheus查询的基本概念。</p>
-<h2 id="数据类型"><a href="#数据类型" class="headerlink" title="数据类型"></a>数据类型</h2><p>在prometheus的查询语言PromQL中，一个表达式可以表达以下四种数据类型的一种：</p>
+<h2 id="数据类型"><a href="#数据类型" class="headerlink" title="数据类型"></a>数据类型</h2><p>在Prometheus的查询语言PromQL中，一个表达式可以表达以下四种数据类型的一种：</p>
 <ul>
 <li>瞬时向量（Instant vector）：共享相同时间戳的时间序列集合，包含满足条件的各时间序列的一个样本。未指定时间戳则返回当前时间的指标值，如<code>http_requests_total</code>就返回当前时刻所有的<code>http_requests_total</code>指标。</li>
 <li>区间向量（Range vector）：指定时间窗口的时间序列集合。</li>
@@ -184,16 +186,16 @@
 <li>count：计数</li>
 <li>…</li>
 </ul>
-<h2 id="指标类型"><a href="#指标类型" class="headerlink" title="指标类型"></a>指标类型</h2><p><strong>注</strong>：指标的类型只是客户端库中的概念，prometheus服务端存储指标时并不区分。</p>
+<h2 id="指标类型"><a href="#指标类型" class="headerlink" title="指标类型"></a>指标类型</h2><p><strong>注</strong>：指标的类型只是客户端库中的概念，Prometheus服务端存储指标时并不区分。</p>
 <p>Prometheus一共有四种指标：</p>
 <ul>
-<li><p>counter：一个累积的指标，它表示一个单调递增的计数器，其值在重新启动时只能增加或重置为零。例如，可以使用count表示服务接受的请求数、已完成的任务或错误的数量。</p>
+<li><p>counter：一个累积的指标，它表示一个单调递增的计数器，其值只能增加或重置为零。例如，可以使用counter表示服务接受的请求数、已完成的任务或错误的数量。</p>
 </li>
 <li><p>guage：用于表示可以任意上下的单一指标，如运行的进程数、 内存占用等。</p>
 </li>
-<li><p>histogram：采样观察值(通常是请求持续时间或响应大小) ，并在可配置的存储桶中计数。对于一个名为<code>&lt;basename&gt;</code>的指标，histogram会在一次抓取的过程中暴露以下三个时序指标：</p>
+<li><p>histogram：采样观察值(通常是请求持续时间或响应大小) ，并在对应范围的桶中计数，得到数据分布。对于一个名为<code>&lt;basename&gt;</code>的指标，histogram会在一次抓取的过程中暴露以下三个时序指标：</p>
 <ol>
-<li><code>&lt;basename&gt;_bucket</code>：对应桶的计数，使用<code>&#123;le=&quot;&lt;upper inclusive bound&gt;&quot;&#125;</code>筛选桶对应值的范围。</li>
+<li><code>&lt;basename&gt;_bucket</code>：对应桶的计数，<strong>注意histogram为累积直方图</strong>，使用&#96;{le&#x3D;”<upper inclusive bound>“}来得到小于等于某上界的频数，这一指标为counter类指标。</li>
 <li><code>&lt;basename&gt;_sum</code>：观测值的总和。</li>
 <li><code>&lt;basename&gt;_count</code>：观测到的事件数，等价于<code>&lt;basename_bucket&#123;le=&quot;+Inf&quot;&#125;</code>。</li>
 </ol>
@@ -201,15 +203,6 @@
 <li><p>summary：与histogram功能类似但是比histogram出现的早，更推荐histogram，因为histogram是可聚集（aggregatable）的而summary不可聚集。另一个不同在于，histogram是在服务端进行计算的，而summary在客户端计算。</p>
 </li>
 </ul>
-<h3 id="histogram详解"><a href="#histogram详解" class="headerlink" title="histogram详解"></a>histogram详解</h3><p>其实前文中histogram给出的是官方的描述，第一次接触可能并不完全能懂。如下图所示，与一般的直方图不同，prometheus中的histogram是一个累积的直方图。为什么使用累积直方图，并没有查到官方的解释，个人认为主要是统计意义，相当于给出了<strong>分布函数</strong>，方便计算最大值、最小值与分位点等等。</p>
-<p><img src="https://oss.seineo.cn/images/202311112153444.png" alt="截屏2023-09-26 20.26.16"></p>
-<p>其中Prometheus计算分位数是假定数据线性分布，找到对应分位数的所在位置，得出对应的值。 比如上图，我们希望得到P90的值，那么也就是要找到第<code>30*0.9+1=28</code>个点，显然他在最后一个bucket（指左图这类一般的直方图中的箱&#x2F;桶）中，假定数据线性分布，根据<a target="_blank" rel="noopener" href="https://github.com/prometheus/prometheus/blob/main/promql/quantile.go">prometheus源代码</a>:</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> bucket.Lower + (bucket.Upper-bucket.Lower)*(rank/bucket.Count)</span><br></pre></td></tr></table></figure>
-
-<p>那我们可以得到第28个点的值为：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">20</span> + <span class="number">5</span> * (<span class="number">8</span> / <span class="number">10</span>) = <span class="number">24</span></span><br></pre></td></tr></table></figure>
-
-<p>由于假定线性分布，将因此会有误差，对于减小分位数误差的指标选择与处理方法见<a target="_blank" rel="noopener" href="https://prometheus.io/docs/practices/histograms/#errors-of-quantile-estimation">errors-of-quantile-estimation</a>。</p>
 <h2 id="函数"><a href="#函数" class="headerlink" title="函数"></a>函数</h2><p>这里介绍几个常用的、而且前文中查询语句用到了的函数。</p>
 <h3 id="rate与irate"><a href="#rate与irate" class="headerlink" title="rate与irate"></a>rate与irate</h3><p><img src="https://oss.seineo.cn/images/202311112153483.png" alt="截屏2023-09-26 20.37.06"></p>
 <p>rate是计算时间窗口内指标每秒的<strong>平均增长率</strong>，比如：</p>
@@ -225,18 +218,36 @@
 <li>rate适合观察长时间的趋势以及用于告警，因为瞬时增长并不一定是异常。</li>
 <li>irate适合观察实时变化，若使用rate计算快速变化的样本平均增长率，容易陷入<strong>长尾问题</strong>（这个问题也可以通过看histogram或者summary来分析解决），因为它用平均值将峰值削平了，无法反映时间窗口内样本数据的快速变化。</li>
 </ul>
-<h3 id="histogram-quantile"><a href="#histogram-quantile" class="headerlink" title="histogram_quantile"></a>histogram_quantile</h3><p><code>histogram_quantile(φ scalar, b instant-vector)</code>计算一个直方图瞬时向量b的百分比φ(0&lt;&#x3D;φ&lt;&#x3D;1)，比如φ&#x3D;0.95，就表示计算P95。 以指标<code>http_request_duration_seconds</code>为例，它的指标类型为histogram，如前文所数，它会暴露一个名为<code>http_request_duration_seconds_bucket</code>的指标，记录了各个桶的频数分布。那么我们就可以使用以下PromQL得到<strong>前10分钟平均新增请求持续时间的分布</strong>：</p>
+<h3 id="histogram-quantile"><a href="#histogram-quantile" class="headerlink" title="histogram_quantile"></a>histogram_quantile</h3><p><code>histogram_quantile(φ scalar, b instant-vector)</code>计算一个直方图瞬时向量b的百分比φ(0&lt;&#x3D;φ&lt;&#x3D;1)，比如φ&#x3D;0.95，就表示计算P95。 以指标<code>http_request_duration_seconds</code>为例，它的指标类型为histogram，如前文所数，它会暴露一个名为<code>http_request_duration_seconds_bucket</code>的指标，记录了各个桶的频数分布。由于<code>xx_bucket</code>为counter类型指标，我们就可以使用以下PromQL得到<strong>前10分钟平均新增请求持续时间的分布</strong>：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rate(http_request_duration_seconds_bucket[<span class="number">10</span>])</span><br></pre></td></tr></table></figure>
 
 <p>如果我们希望获取不同命名空间总的请求持续时间的分布，则可以使用聚集操作：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sum <span class="keyword">by</span> (le, namespace) rate(http_request_duration_seconds_bucket[<span class="number">10</span>])</span><br></pre></td></tr></table></figure>
 
-<p>可以看到我们除了按namespace聚集，还按le聚集。对于prometheus的直方图（conventional histogram而非实验性质的native histogram)，聚集操作都必须带上这一个标签，因为histogram是累积直方图，每个桶都有le标签，需要按桶聚集，不然没有意义。</p>
+<p>可以看到我们除了按namespace聚集，还按le聚集。对于Prometheus的直方图（conventional histogram而非实验性质的native histogram)，聚集操作都必须带上这一个标签，因为histogram是累积直方图，每个桶都有le标签，需要按桶聚集，不然没有意义。</p>
 <p>更进一步，如果希望计算不同命名空间中指标<code>http_request_duration_seconds</code>的P90值，则可以使用下面的PromQL：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">histogram_quantile(<span class="number">0.9</span>, sum <span class="keyword">by</span> (le, namespace) rate(http_request_duration_seconds_bucket[<span class="number">10</span>]))</span><br></pre></td></tr></table></figure>
 
+<p>那么<code>histogram_quantile</code>又是如何实现的呢？</p>
+<p><img src="https://oss.seineo.cn/images/202311222030173.png" alt="截屏2023-09-26 20.26.16"></p>
+<p>根据<a target="_blank" rel="noopener" href="https://github.com/prometheus/prometheus/blob/main/promql/quantile.go#L155">Prometheus 2.48.0源码</a>，我们可以发现，虽然histogram在用户看来是累积直方图，但是内部还是用直方图的方式实现（每个存储桶有上下界），且实现百分比预估的方法也十分简单粗暴——假定每个存储桶的数据遵循线性分布。</p>
+<p>以上图为例，我们来简单演示一遍Prometheus计算P90的流程。相关函数为：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">histogramQuantile</span><span class="params">(q <span class="type">float64</span>, h *histogram.FloatHistogram)</span></span> <span class="type">float64</span></span><br></pre></td></tr></table></figure>
 
-
+<p>其中q就是上文中的百分比φ(0&lt;&#x3D;φ&lt;&#x3D;1)，h为直方图瞬时向量。</p>
+<ol>
+<li><p>由于q&gt;&#x3D;0.5, 我们反向遍历直方图，计算数据逆向排位：<code>rank = (1-q) * sum = 0.1 * 30 = 3</code>。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> math.IsNaN(h.Sum) || q &lt; <span class="number">0.5</span> &#123;</span><br><span class="line">  it = h.AllBucketIterator()</span><br><span class="line">  rank = q * h.Count</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  it = h.AllReverseBucketIterator()</span><br><span class="line">  rank = (<span class="number">1</span> - q) * h.Count</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>寻找数据在倒数第几个存储桶，可以发现就在最后一个。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> it.Next() &#123;</span><br><span class="line">  bucket = it.At()</span><br><span class="line">  count += bucket.Count</span><br><span class="line">  <span class="keyword">if</span> count &gt;= rank &#123;</span><br><span class="line">    <span class="keyword">break</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>计算数据在该桶的正向排位：<code>rank = count - rank = 10 - 3 = 7</code>。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> math.IsNaN(h.Sum) || q &lt; <span class="number">0.5</span> &#123;</span><br><span class="line">  rank -= count - bucket.Count</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  rank = count - rank</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>假定该桶数据服从线性分布，根据上下界与该数据的正向排位得到值为<code>20 + (25 - 20) * (7/10) = 23.5</code>。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> bucket.Lower + (bucket.Upper-bucket.Lower)*(rank/bucket.Count)</span><br></pre></td></tr></table></figure></li>
+</ol>
 <h2 id="查询语句回顾"><a href="#查询语句回顾" class="headerlink" title="查询语句回顾"></a>查询语句回顾</h2><p>有了上述知识，我们就可以弄清文章开头提到的PromQL的含义了。</p>
 <p><img src="https://oss.seineo.cn/images/202311112153522.png" alt="截屏2023-09-27 11.00.30"></p>
 <p>上图解构了给出的PromQL，我们一步一步看。</p>
@@ -275,7 +286,7 @@
     
     
       <div id="toc-footer" style="display: none">
-        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="toc-number">1.</span> <span class="toc-text">数据类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%97%B6%E5%BA%8F%E9%80%89%E6%8B%A9%E5%99%A8"><span class="toc-number">2.</span> <span class="toc-text">时序选择器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%93%8D%E4%BD%9C%E7%AC%A6"><span class="toc-number">3.</span> <span class="toc-text">操作符</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8C%87%E6%A0%87%E7%B1%BB%E5%9E%8B"><span class="toc-number">4.</span> <span class="toc-text">指标类型</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#histogram%E8%AF%A6%E8%A7%A3"><span class="toc-number">4.1.</span> <span class="toc-text">histogram详解</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%BD%E6%95%B0"><span class="toc-number">5.</span> <span class="toc-text">函数</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#rate%E4%B8%8Eirate"><span class="toc-number">5.1.</span> <span class="toc-text">rate与irate</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#histogram-quantile"><span class="toc-number">5.2.</span> <span class="toc-text">histogram_quantile</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2%E8%AF%AD%E5%8F%A5%E5%9B%9E%E9%A1%BE"><span class="toc-number">6.</span> <span class="toc-text">查询语句回顾</span></a></li></ol>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="toc-number">1.</span> <span class="toc-text">数据类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%97%B6%E5%BA%8F%E9%80%89%E6%8B%A9%E5%99%A8"><span class="toc-number">2.</span> <span class="toc-text">时序选择器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%93%8D%E4%BD%9C%E7%AC%A6"><span class="toc-number">3.</span> <span class="toc-text">操作符</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8C%87%E6%A0%87%E7%B1%BB%E5%9E%8B"><span class="toc-number">4.</span> <span class="toc-text">指标类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%BD%E6%95%B0"><span class="toc-number">5.</span> <span class="toc-text">函数</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#rate%E4%B8%8Eirate"><span class="toc-number">5.1.</span> <span class="toc-text">rate与irate</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#histogram-quantile"><span class="toc-number">5.2.</span> <span class="toc-text">histogram_quantile</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2%E8%AF%AD%E5%8F%A5%E5%9B%9E%E9%A1%BE"><span class="toc-number">6.</span> <span class="toc-text">查询语句回顾</span></a></li></ol>
       </div>
     
 

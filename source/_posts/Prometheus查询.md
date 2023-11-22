@@ -5,25 +5,21 @@ tags:
   
 ---
 
-
-
 在使用Locust进行压测或使用Kiali监控服务时，都会有着平均延迟、第95百分位(95th percentile，简写为P95)延迟这些概念。平均延迟好理解，P95延迟是什么意思呢？为什么需要这个时间？
 
 <img src="https://oss.seineo.cn/images/202311112153400.png" alt="image-20230921151042328" style="zoom:50%;" />
 
 P95延迟表示95%的请求延迟低于这个值，这个值可以让我们对网络或应用程序的实际性能特征有了更加现实和直观的理解，使我们的应用能够迎合更广泛的受众，而平均响应时间则可能会因为一些极端的值而产生严重偏差。
 
-开源工具可以帮助我们计算这些指标，那么如果我们自己想通过prometheus收集，又该如何使用PromQL来表示呢？kiali中计算P95响应时间的PromQL为：
+开源工具可以帮助我们计算这些指标，那么如果我们自己想通过Prometheus收集，又该如何使用PromQL来表示呢？kiali中计算P95响应时间的PromQL为：
 
 ![截屏2023-09-27 10.59.53](https://oss.seineo.cn/images/202311112153423.png)
 
 为了明白这一查询语句的意思，需要先学习Prometheus查询的基本概念。
 
-
-
 ## 数据类型
 
-在prometheus的查询语言PromQL中，一个表达式可以表达以下四种数据类型的一种：
+在Prometheus的查询语言PromQL中，一个表达式可以表达以下四种数据类型的一种：
 
 - 瞬时向量（Instant vector）：共享相同时间戳的时间序列集合，包含满足条件的各时间序列的一个样本。未指定时间戳则返回当前时间的指标值，如`http_requests_total`就返回当前时刻所有的`http_requests_total`指标。
 - 区间向量（Range vector）：指定时间窗口的时间序列集合。
@@ -50,38 +46,18 @@ PromQL支持算术、逻辑、比较等运算符，为了解释前文中的查�
 
 ## 指标类型
 
-**注**：指标的类型只是客户端库中的概念，prometheus服务端存储指标时并不区分。
+**注**：指标的类型只是客户端库中的概念，Prometheus服务端存储指标时并不区分。
 
 Prometheus一共有四种指标：
 
-- counter：一个累积的指标，它表示一个单调递增的计数器，其值在重新启动时只能增加或重置为零。例如，可以使用count表示服务接受的请求数、已完成的任务或错误的数量。
+- counter：一个累积的指标，它表示一个单调递增的计数器，其值只能增加或重置为零。例如，可以使用counter表示服务接受的请求数、已完成的任务或错误的数量。
 
 - guage：用于表示可以任意上下的单一指标，如运行的进程数、 内存占用等。
-- histogram：采样观察值(通常是请求持续时间或响应大小) ，并在可配置的存储桶中计数。对于一个名为`<basename>`的指标，histogram会在一次抓取的过程中暴露以下三个时序指标：
-  1. `<basename>_bucket`：对应桶的计数，使用`{le="<upper inclusive bound>"}`筛选桶对应值的范围。
+- histogram：采样观察值(通常是请求持续时间或响应大小) ，并在对应范围的桶中计数，得到数据分布。对于一个名为`<basename>`的指标，histogram会在一次抓取的过程中暴露以下三个时序指标：
+  1. `<basename>_bucket`：对应桶的计数，**注意histogram为累积直方图**，使用`{le="<upper inclusive bound>"}来得到小于等于某上界的频数，这一指标为counter类指标。
   2. `<basename>_sum`：观测值的总和。
   3. `<basename>_count`：观测到的事件数，等价于`<basename_bucket{le="+Inf"}`。
 - summary：与histogram功能类似但是比histogram出现的早，更推荐histogram，因为histogram是可聚集（aggregatable）的而summary不可聚集。另一个不同在于，histogram是在服务端进行计算的，而summary在客户端计算。
-
-### histogram详解
-
-其实前文中histogram给出的是官方的描述，第一次接触可能并不完全能懂。如下图所示，与一般的直方图不同，prometheus中的histogram是一个累积的直方图。为什么使用累积直方图，并没有查到官方的解释，个人认为主要是统计意义，相当于给出了**分布函数**，方便计算最大值、最小值与分位点等等。
-
-![截屏2023-09-26 20.26.16](https://oss.seineo.cn/images/202311112153444.png)
-
-其中Prometheus计算分位数是假定数据线性分布，找到对应分位数的所在位置，得出对应的值。 比如上图，我们希望得到P90的值，那么也就是要找到第`30*0.9+1=28`个点，显然他在最后一个bucket（指左图这类一般的直方图中的箱/桶）中，假定数据线性分布，根据[prometheus源代码](https://github.com/prometheus/prometheus/blob/main/promql/quantile.go):
-
-```go
-return bucket.Lower + (bucket.Upper-bucket.Lower)*(rank/bucket.Count)
-```
-
-那我们可以得到第28个点的值为：
-
-```go
-20 + 5 * (8 / 10) = 24
-```
-
-由于假定线性分布，将因此会有误差，对于减小分位数误差的指标选择与处理方法见[errors-of-quantile-estimation](https://prometheus.io/docs/practices/histograms/#errors-of-quantile-estimation)。
 
 ## 函数
 
@@ -114,7 +90,7 @@ irate(http_requests_total[5m])
 
 ### histogram_quantile
 
-`histogram_quantile(φ scalar, b instant-vector)`计算一个直方图瞬时向量b的百分比φ(0<=φ<=1)，比如φ=0.95，就表示计算P95。 以指标`http_request_duration_seconds`为例，它的指标类型为histogram，如前文所数，它会暴露一个名为`http_request_duration_seconds_bucket`的指标，记录了各个桶的频数分布。那么我们就可以使用以下PromQL得到**前10分钟平均新增请求持续时间的分布**：
+`histogram_quantile(φ scalar, b instant-vector)`计算一个直方图瞬时向量b的百分比φ(0<=φ<=1)，比如φ=0.95，就表示计算P95。 以指标`http_request_duration_seconds`为例，它的指标类型为histogram，如前文所数，它会暴露一个名为`http_request_duration_seconds_bucket`的指标，记录了各个桶的频数分布。由于`xx_bucket`为counter类型指标，我们就可以使用以下PromQL得到**前10分钟平均新增请求持续时间的分布**：
 
 ```sql
 rate(http_request_duration_seconds_bucket[10])
@@ -126,7 +102,7 @@ rate(http_request_duration_seconds_bucket[10])
 sum by (le, namespace) rate(http_request_duration_seconds_bucket[10])
 ```
 
-可以看到我们除了按namespace聚集，还按le聚集。对于prometheus的直方图（conventional histogram而非实验性质的native histogram)，聚集操作都必须带上这一个标签，因为histogram是累积直方图，每个桶都有le标签，需要按桶聚集，不然没有意义。
+可以看到我们除了按namespace聚集，还按le聚集。对于Prometheus的直方图（conventional histogram而非实验性质的native histogram)，聚集操作都必须带上这一个标签，因为histogram是累积直方图，每个桶都有le标签，需要按桶聚集，不然没有意义。
 
 更进一步，如果希望计算不同命名空间中指标`http_request_duration_seconds`的P90值，则可以使用下面的PromQL：
 
@@ -134,7 +110,59 @@ sum by (le, namespace) rate(http_request_duration_seconds_bucket[10])
 histogram_quantile(0.9, sum by (le, namespace) rate(http_request_duration_seconds_bucket[10]))
 ```
 
+那么`histogram_quantile`又是如何实现的呢？
 
+![截屏2023-09-26 20.26.16](https://oss.seineo.cn/images/202311222030173.png)
+
+根据[Prometheus 2.48.0源码](https://github.com/prometheus/prometheus/blob/main/promql/quantile.go#L155)，我们可以发现，虽然histogram在用户看来是累积直方图，但是内部还是用直方图的方式实现（每个存储桶有上下界），且实现百分比预估的方法也十分简单粗暴——假定每个存储桶的数据遵循线性分布。
+
+以上图为例，我们来简单演示一遍Prometheus计算P90的流程。相关函数为：
+
+```go
+func histogramQuantile(q float64, h *histogram.FloatHistogram) float64
+```
+
+其中q就是上文中的百分比φ(0<=φ<=1)，h为直方图瞬时向量。
+
+1. 由于q>=0.5, 我们反向遍历直方图，计算数据逆向排位：`rank = (1-q) * sum = 0.1 * 30 = 3`。
+
+   ```go
+   if math.IsNaN(h.Sum) || q < 0.5 {
+     it = h.AllBucketIterator()
+     rank = q * h.Count
+   } else {
+     it = h.AllReverseBucketIterator()
+     rank = (1 - q) * h.Count
+   }
+   ```
+
+2. 寻找数据在倒数第几个存储桶，可以发现就在最后一个。
+
+   ```go
+   for it.Next() {
+     bucket = it.At()
+     count += bucket.Count
+     if count >= rank {
+       break
+     }
+   }
+   ```
+
+3. 计算数据在该桶的正向排位：`rank = count - rank = 10 - 3 = 7`。
+
+   ```go
+   if math.IsNaN(h.Sum) || q < 0.5 {
+     rank -= count - bucket.Count
+   } else {
+     rank = count - rank
+   }
+   ```
+
+4. 假定该桶数据服从线性分布，根据上下界与该数据的正向排位得到值为`20 + (25 - 20) * (7/10) = 23.5`。
+
+   ```go
+   return bucket.Lower + (bucket.Upper-bucket.Lower)*(rank/bucket.Count)
+   ```
 
 ## 查询语句回顾
 
