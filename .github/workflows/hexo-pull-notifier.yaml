@@ -7,7 +7,7 @@ jobs:
     steps:
       - name: Post data to backend server.
         run: >
-          status_code=$(curl -s -o /dev/null -w "%{http_code}" https://seineo.cn/hexo-puller --header 'Content-Type: application/json' --data '{"repoUrl": "https://github.com/seineo/blog.git", "targetDir":"/home/lyw"}');
+          status_code=$(curl -s -o /dev/null -w "%{http_code}" https://seineo.cn/hexo-puller --header 'Content-Type: application/json' --data '{"repoUrl": "git@github.com:seineo/blog.git", "targetDir":"/home/lyw"}');
 
           if [ "$status_code" -ne "200" ]; then
             echo "Error: status code is ${status_code}"
