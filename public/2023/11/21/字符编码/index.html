@@ -14,8 +14,10 @@
 <meta property="og:description" content="Go引例Go语言遍历字符串有两种方式，一是按下标遍历，二是for range遍历。以下面的代码片段为例，我们研究两者的不同之处。 12345678910str :&#x3D; &quot;I love Go&quot;fmt.Println(&quot;index loop:&quot;)for i :&#x3D; 0; i &lt; len(str); i++ &amp;#123;  fmt.Printf(&quot;%x">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://oss.seineo.cn/images/202311221055209.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202311231703655.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202311232040279.png">
 <meta property="article:published_time" content="2023-11-21T11:40:04.000Z">
-<meta property="article:modified_time" content="2023-11-22T12:55:03.844Z">
+<meta property="article:modified_time" content="2023-11-23T13:19:33.787Z">
 <meta property="article:author" content="seineo">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://oss.seineo.cn/images/202311221055209.png">
@@ -114,7 +116,7 @@
     
     
       <div id="toc">
-        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Go%E5%BC%95%E4%BE%8B"><span class="toc-number">1.</span> <span class="toc-text">Go引例</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ASCII"><span class="toc-number">2.</span> <span class="toc-text">ASCII</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Unicode"><span class="toc-number">3.</span> <span class="toc-text">Unicode</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#UTF-8"><span class="toc-number">4.</span> <span class="toc-text">UTF-8</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">5.</span> <span class="toc-text">参考</span></a></li></ol>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Go%E5%BC%95%E4%BE%8B"><span class="toc-number">1.</span> <span class="toc-text">Go引例</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ASCII"><span class="toc-number">2.</span> <span class="toc-text">ASCII</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Unicode"><span class="toc-number">3.</span> <span class="toc-text">Unicode</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#UTF-8"><span class="toc-number">4.</span> <span class="toc-text">UTF-8</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9E%E9%A1%BE%E5%BC%95%E4%BE%8B"><span class="toc-number">5.</span> <span class="toc-text">回顾引例</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">6.</span> <span class="toc-text">参考</span></a></li></ol>
       </div>
     
   </span>
@@ -167,28 +169,40 @@
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">index loop:</span><br><span class="line">e6 88 91 e7 88 b1 47 6f </span><br><span class="line">range loop:</span><br><span class="line">6211 7231 47 6f </span><br></pre></td></tr></table></figure>
 
 <p>为什么两种遍历方式得到的“字符”数量与值都不同呢？通过查阅<a target="_blank" rel="noopener" href="https://go.dev/blog/strings">官方博客</a>，我们可以得到答案。</p>
-<p><strong>Go语言将字符串按UTF-8编码后存储为字节数组</strong>。下标遍历，则获取字符串的每一个字节，而for range遍历则是获取字符串中的每一个码位（code point），一个码位可能对应一个或多个字节，因此上述两种情况的结果不同。</p>
+<p><strong>Go语言将字符串按UTF-8编码后存储为字节数组</strong>。下标遍历是获取字符串的每一个字节，而for range遍历则是获取字符串中的每一个码位（code point），一个码位可能对应一个或多个字节，因此上述两种情况的结果不同。</p>
 <p>看到这里，你或许仍然不理解为什么。这涉及字符编码的问题，接下来让我们一次性弄懂字符编码，再回顾这个例子。</p>
 <h2 id="ASCII"><a href="#ASCII" class="headerlink" title="ASCII"></a>ASCII</h2><p>最初常用的字符集是ASCII，其编码表如下，<code>Dec</code>代表十进制的值，<code>Char</code>代表要编码的字符。</p>
 <img src="https://oss.seineo.cn/images/202311221055209.png" alt="image-20231122105551156" style="zoom: 33%;" />
 
-<p>由表可知，ASCII通过7个bit覆盖了英文的所有字符、标点以及一些不可见的控制字符。现在电脑一般存储最小单位是字节，因此使用一个字节即可表示一个ASCII编码的字符。</p>
-<h2 id="Unicode"><a href="#Unicode" class="headerlink" title="Unicode"></a>Unicode</h2><p>英文可以通过ASCII轻松地编码，但是亚洲语言的字词更丰富，不可能放进一个字节中。之前一般会通过一个叫DBCS（Double Byte Character Set）的字符集解决，有的字符用一个字节存储，有的用两个，这导致程序员如果习惯性的通过下标访问就会出现问题，这一字符集不同的系统有着专门的函数（如windows的AnsiNext、AnsiPrev）去处理这一团糟的编码。</p>
-<p>为了统一编码标准，Unicode被提出。<strong>Unicode并不是一个具体的编码方式，而是一种编码思想。</strong></p>
+<p>由表可知，ASCII通过7个比特覆盖了英文的所有字符、标点以及一些不可见的控制字符。现在电脑一般存储最小单位是字节，因此使用一个字节即可表示一个ASCII编码的字符。</p>
+<h2 id="Unicode"><a href="#Unicode" class="headerlink" title="Unicode"></a>Unicode</h2><p>英文可以通过ASCII轻松地编码，但是亚洲语言的字词更丰富，不可能放进一个字节中。为了统一编码标准，Unicode被提出。<strong>Unicode并不是一个具体的编码方式，而是一种编码思想。</strong></p>
 <ul>
 <li>之前的字符编码：将一个字符映射到一串比特，如A -&gt; <code>0100 0001</code>。</li>
-<li>Unicode：将一个字符映射到一个码位（code point），如 A -&gt;<code>U+0041</code>。</li>
+<li>Unicode：将一个字符映射到一个码位（code point），如 A -&gt; <code>U+0041</code>。</li>
 </ul>
-<p>码位的具体编码方式又分为了UTF-16、UTF-32、UTF-8等等。</p>
-<p>最初每个码位就是两个字节存储的（UTF-16），这也就造成了大家<strong>常有的错误观念：Unicode就是一种将字符编码为两个字节的编码方式</strong>。使用两个字节编码一个字符则需要考虑字节序的问题，人们引入BOM（Byte Order Mark），将<code>FE FF</code>放到字节流的开头，如果读取出来是<code>FE FF</code>则说明机器是大端序，如果是<code>FF FE</code>则是小端序，需要交换字节来获取正确的字符。</p>
-<h2 id="UTF-8"><a href="#UTF-8" class="headerlink" title="UTF-8"></a>UTF-8</h2><p>由于使用英语的国家用不到U+00FF以上的字符，因此他们认为强制两字节过于浪费空间，这就出现了UTF-8。UTF-8是变长编码，对于0～127的码位只是用一个字节来存储，适配了ASCII，大于等于128的则用2～4个字节存储。</p>
-<p>如何实现变长呢？ 读取第一个字节就知道会有几个字节，如编解码表所示。</p>
-<p>现在UTF-8是最常用的编码方式。 除了向后兼容ASCII以外，不用考虑字节序也是UTF-8的优点之一。</p>
-<p>UFT-8面向字节，以一个字节为单位读写，因此不需要。</p>
-<p>UTF-16以两个字节为单位读写，则需要考虑 （画个图对比下）</p>
+<p>码位的具体编码方式又分为了UTF-16、UTF-32、UTF-8等等。最初每个码位就是两个字节存储的（UTF-16），这也就造成了大家<strong>常有的错误观念：Unicode就是一种将字符编码为两个字节的编码方式</strong>。</p>
+<p>由于UTF-16使用两个字节编码一个字符，它需要考虑字节序的问题。如下图，人们引入BOM（Byte Order Mark），将<code>FE FF</code>放到字节流的开头，如果读取出来是<code>FE FF</code>则说明机器是大端序；如果是<code>FF FE</code>，说明机器是小端序，这时UTF-16需要交换字节来显示正确的字符。</p>
+<p><img src="https://oss.seineo.cn/images/202311231703655.png" alt="Bytes representing the BOM."></p>
+<h2 id="UTF-8"><a href="#UTF-8" class="headerlink" title="UTF-8"></a>UTF-8</h2><p>由于使用英语的国家用不到U+00FF以上的字符，他们认为强制两字节过于浪费空间，于是UTF-8出现了。</p>
+<p><img src="https://oss.seineo.cn/images/202311232040279.png" alt="截屏2023-11-23 20.39.54"></p>
+<p>如上表所示，UTF-8是变长编码，对于0～127的码位只是用一个字节来存储，适配了ASCII，大于等于128的则用2～4个字节存储。</p>
+<p>值得注意的是<strong>UTF-8面向字节</strong>，以一个字节为单位读写，这意味着解码时它不需要考虑字节序。许多同学不理解：“就算以字节为单位读写，那还是有字节序问题，在小端序的机器上不需要反转字节顺序吗？” 这是对字节序的理解有误导致的疑问，以字符<code>U+00A3</code>为例：</p>
+<ul>
+<li>UTF-16以两个字节为单位读写，因此小端序计算机会将低位字节写入低位地址，从而存储为<code>A3 00</code>。解码时为了正确显示，UTF-16读取后需要交换字节得到<code>00 A3</code>，然后按照编码表得到码点。</li>
+<li>按上述编码表，UTF-8将这一码点编码为<code>C2 A3</code>。因为以一个字节为单位读写，计算机每次收到一个字节写入，从而无论是大端序还是小端序，都存储为<code>2D 30</code>。这样解码时，UTF-8只需要按顺序读取并解码即可。</li>
+</ul>
+<p>正因为UTF-8没有字节序的问题，因此官方并不鼓励也不禁止在字节流的开头使用BOM。</p>
+<p>另外一个常见的问题是：给定字节流，UTF-8如何知道几个字节对应一个字符呢？其实这很简单，由编码表可以看出，不同字节长度的字符中的第一个字节都不同，因此UTF-8只需要读取第一个字节就知道它还需要读取几个字节来解析了。</p>
+<h2 id="回顾引例"><a href="#回顾引例" class="headerlink" title="回顾引例"></a>回顾引例</h2><p>了解UTF-8过后，再回看下面这段话是否理解了呢？</p>
+<blockquote>
+<p><strong>Go语言将字符串按UTF-8编码后存储为字节数组</strong>。下标遍历是获取字符串的每一个字节，而for range遍历则是获取字符串中的每一个码位（code point），一个码位可能对应一个或多个字节，因此上述两种情况的结果不同。</p>
+</blockquote>
+<p>下标遍历不再赘述，这里详细介绍下for range遍历。 for range遍历每次会移动到一个UTF-8字符在该字符串的开始下标，并返回该码位的值。由于一个码位至多可以用4个字节存储，因此Go语言使用<code>int32</code>类型来存储码位。为了方便称呼码位，该类型也有一个别名：<code>rune</code>。</p>
+<p>因此，Go遍历字符串的两种方式其实是Go对“字节“与”字符“两个概念在语言层面上的区分，理解了这一点，遍历字符串时的选择也就不是一件难事了。</p>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
 <li><a target="_blank" rel="noopener" href="https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/">The Absolute Minimum Every Software Developer Absolutely, Positively Must Know About Unicode and Character Sets (No Excuses!) – Joel on Software</a></li>
-<li><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/3833693/isn-t-on-big-endian-machines-utf-8s-byte-order-different-than-on-little-endian">https://stackoverflow.com/questions/3833693/isn-t-on-big-endian-machines-utf-8s-byte-order-different-than-on-little-endian</a></li>
+<li><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/3833693/isn-t-on-big-endian-machines-utf-8s-byte-order-different-than-on-little-endian">Isn’t on big endian machines UTF-8’s byte order different than on little endian machines? So why then doesn’t UTF-8 require a BOM?</a></li>
+<li><a target="_blank" rel="noopener" href="https://go.dev/blog/strings">Strings, bytes, runes and characters in Go</a></li>
 </ul>
 
   </div>
@@ -217,7 +231,7 @@
     
     
       <div id="toc-footer" style="display: none">
-        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Go%E5%BC%95%E4%BE%8B"><span class="toc-number">1.</span> <span class="toc-text">Go引例</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ASCII"><span class="toc-number">2.</span> <span class="toc-text">ASCII</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Unicode"><span class="toc-number">3.</span> <span class="toc-text">Unicode</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#UTF-8"><span class="toc-number">4.</span> <span class="toc-text">UTF-8</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">5.</span> <span class="toc-text">参考</span></a></li></ol>
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Go%E5%BC%95%E4%BE%8B"><span class="toc-number">1.</span> <span class="toc-text">Go引例</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ASCII"><span class="toc-number">2.</span> <span class="toc-text">ASCII</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Unicode"><span class="toc-number">3.</span> <span class="toc-text">Unicode</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#UTF-8"><span class="toc-number">4.</span> <span class="toc-text">UTF-8</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9E%E9%A1%BE%E5%BC%95%E4%BE%8B"><span class="toc-number">5.</span> <span class="toc-text">回顾引例</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">6.</span> <span class="toc-text">参考</span></a></li></ol>
       </div>
     
 
