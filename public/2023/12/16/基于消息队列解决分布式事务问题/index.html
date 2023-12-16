@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="引例最近自己在做的项目有一个简单的需求：生成账户注册所需的验证码后给用户邮箱发送验证码邮件。为了可扩展性，我将整个系统划分为了一个个微服务，那么对于这个需求，也就是账户服务需要在生成验证码后通知邮箱服务发送邮件。 我们需要验证码生成与邮件发送一起成功或一起失败，因此这是一个分布式事务问题。解决分布式事务业界有一些经典的方法，如两阶段提交（Two-phase Commit，2PC）、三阶段提交、消息">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于消息队列解决分布式事务问题">
+<meta property="og:url" content="http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/index.html">
+<meta property="og:site_name" content="seineo">
+<meta property="og:description" content="引例最近自己在做的项目有一个简单的需求：生成账户注册所需的验证码后给用户邮箱发送验证码邮件。为了可扩展性，我将整个系统划分为了一个个微服务，那么对于这个需求，也就是账户服务需要在生成验证码后通知邮箱服务发送邮件。 我们需要验证码生成与邮件发送一起成功或一起失败，因此这是一个分布式事务问题。解决分布式事务业界有一些经典的方法，如两阶段提交（Two-phase Commit，2PC）、三阶段提交、消息">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://oss.seineo.cn/images/202312152358086.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202312160002179.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202312160032384.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202312160129712.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202312161610704.png">
+<meta property="article:published_time" content="2023-12-16T08:52:40.000Z">
+<meta property="article:modified_time" content="2023-12-16T08:52:40.010Z">
+<meta property="article:author" content="seineo">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://oss.seineo.cn/images/202312152358086.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>基于消息队列解决分布式事务问题</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2023/11/21/%E5%AD%97%E7%AC%A6%E7%BC%96%E7%A0%81/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&text=基于消息队列解决分布式事务问题"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&title=基于消息队列解决分布式事务问题"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&is_video=false&description=基于消息队列解决分布式事务问题"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=基于消息队列解决分布式事务问题&body=Check out this article: http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&title=基于消息队列解决分布式事务问题"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&title=基于消息队列解决分布式事务问题"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&title=基于消息队列解决分布式事务问题"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&title=基于消息队列解决分布式事务问题"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&name=基于消息队列解决分布式事务问题&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&t=基于消息队列解决分布式事务问题"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%95%E4%BE%8B"><span class="toc-number">1.</span> <span class="toc-text">引例</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%9A%E5%8A%A1%E6%95%B0%E6%8D%AE%E4%B8%8E%E4%BA%8B%E4%BB%B6%E6%B6%88%E6%81%AF%E7%9A%84%E4%B8%80%E8%87%B4%E6%80%A7"><span class="toc-number">2.</span> <span class="toc-text">业务数据与事件消息的一致性</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E5%A4%84%E7%90%86%E7%9A%84%E5%B9%82%E7%AD%89%E6%80%A7"><span class="toc-number">3.</span> <span class="toc-text">消息处理的幂等性</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        基于消息队列解决分布式事务问题
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">seineo</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2023-12-16T08:52:40.000Z" class="dt-published" itemprop="datePublished">2023-12-16</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <h2 id="引例"><a href="#引例" class="headerlink" title="引例"></a>引例</h2><p>最近自己在做的项目有一个简单的需求：生成账户注册所需的验证码后给用户邮箱发送验证码邮件。为了可扩展性，我将整个系统划分为了一个个微服务，那么对于这个需求，也就是<strong>账户服务</strong>需要在生成验证码后通知<strong>邮箱服务</strong>发送邮件。</p>
+<p>我们需要验证码生成与邮件发送一起成功或一起失败，因此这是一个分布式事务问题。解决分布式事务业界有一些经典的方法，如两阶段提交（Two-phase Commit，2PC）、三阶段提交、消息队列等，最终我选择了消息队列这一方式，原因如下：</p>
+<ul>
+<li><p><strong>高性能</strong>：相比于2PC的长时间锁定与大量的通信开销，消息队列通常能提供较高的吞吐量和较低的延迟。</p>
+</li>
+<li><p><strong>系统解耦</strong>：通过消息队列，系统可以实现各个服务的解耦，每个服务可以专注于自己的业务逻辑，通过消息传递来让下游服务完成它们负责的业务。</p>
+</li>
+<li><p><strong>流量削峰</strong>：通过消息队列，可以将突增的并发同步调用转化为异步的消息推送，从而下游服务可以根据处理能力来消费消息，避免服务器宕机。</p>
+</li>
+<li><p><strong>最终一致性</strong>：消息队列虽然不能实现2PC那样的强一致性，但可以通过合理的设计实现最终一致性，使得系统在一段时间内达到一致状态。</p>
+</li>
+</ul>
+<h2 id="业务数据与事件消息的一致性"><a href="#业务数据与事件消息的一致性" class="headerlink" title="业务数据与事件消息的一致性"></a>业务数据与事件消息的一致性</h2><p>对于这一问题，我第一反应是同步事件投递的方式，如下图所示，账户服务在生成并存储验证码后，同步地向消息队列投递事件消息。</p>
+<img src="https://oss.seineo.cn/images/202312152358086.png" alt="截屏2023-12-15 23.58.48" style="zoom:33%;" />
+
+<p>这似乎很完美，如果存储验证码或者写入消息失败，账户服务的本地事务都会回滚，保证业务数据与事件消息的一致性。</p>
+<p>但其实这样仍然会有不一致的情况，如下图所示，如果消息已写入消息队列，但是在第6步返回时由于网络原因超时，那么账户服务的事务会回滚，验证码并不会被存储，但已存储的消息后续会被消费，这导致了业务数据与事件消息的不一致。</p>
+<img src="https://oss.seineo.cn/images/202312160002179.png" alt="截屏2023-12-16 00.02.10" style="zoom: 33%;" />
+
+<p>上述问题本质是因为<strong>本地事务无法准确获知事件存储的状态</strong>，因此可以在本地存储事件消息的状态，再异步地定时查询未发布的事件，将他们发布即可，如下图所示。</p>
+<img src="https://oss.seineo.cn/images/202312160032384.png" alt="截屏2023-12-16 00.32.08" style="zoom:50%;" />
+
+<p>未发布的事件不是发布后就标记为已处理，如果这样的话，比如第11步消费方消费失败时，由于消息已经读取且发布方已经标记为该事件已处理，那么该事件就丢失了，邮件并未发送出去。那么何时标记呢？在消费方消费完成后通知发布方已消费，发布方再进行标记，具体如何通知见后文。 </p>
+<h2 id="消息处理的幂等性"><a href="#消息处理的幂等性" class="headerlink" title="消息处理的幂等性"></a>消息处理的幂等性</h2><p>我们的目光来到消息的消费方，定时检查事件投递、消息队列本身的重试等都可能会使得消费方收到重复的消息，如果重复地消费了消息，不幂等的消息处理会严重影响用户体验或造成损失，比如引例中重复发送了邮件会使用户困惑，如果消费方的处理是金额的增加或扣除，则更是大事故。</p>
+<p>为了确保不重复消费，我们可以让消费方也存储事件：维护一个本地消费事件表，收到消息时尝试插入一条事件消息，如果<strong>因为重复标识而插入失败，则说明收到了重复的消息，丢弃该消息</strong>。当然，完成这一点需要每个事件都有着唯一的ID，这可以通过分布式ID生成算法（如Twitter的Snowflake算法）来解决。</p>
+<p>如下图所示，邮件服务插入消费事件成功（第12步）后则开始业务逻辑，此处为发送邮件，完成事务后再向消息队列写入已消费该事件的消息，账户服务收到后将对应的事件修改为已消费即可。至此事件完成，该事件不会再被账户服务的定时任务选中并投递到消息队列了。</p>
+<img src="https://oss.seineo.cn/images/202312160129712.png" alt="截屏2023-12-16 01.29.41" style="zoom: 67%;" />
+
+
+
+<p>这里有一个问题，邮箱服务也要通过消息队列通知账户服务，那是不是也一样需要事件表呢？需要的话那岂不是账户服务又要通知邮箱服务已消费，这样就陷入了死循环了。</p>
+<p>仔细分析邮箱服务的11到14步，如果业务逻辑完成（此处为邮件已发送），那么消费事件就已经记录在表中了，即使事务结束后第15步发送事件已消费的消息失败，账户服务定时扫描后重复发送该事件，邮箱服务也会因为事件已在表中而不重复消费，<strong>插入失败时也回复事件已消费的消息给账户服务</strong>，这样最终也会让事件标记为已消费。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>至此，我们可以总结出一套基于消息队列解决分布式事务问题的流程，如下图所示：</p>
+<p><img src="https://oss.seineo.cn/images/202312161610704.png" alt="截屏2023-12-16 16.10.06"></p>
+<p>这一流程重点在于解决两个问题：</p>
+<p>1， 如何保证消息不丢失？</p>
+<ol start="2">
+<li>如何保证消息不重复消费？</li>
+</ol>
+<p>对于第一点，需要发布方确认消费方收到消息并消费完成，这是通过发布方本地的事件存储以及消费方确认消费完成后的回应事件来实现的。</p>
+<p>对于第二点，消费方可以利用事件的唯一标识，只处理第一次接收到的事件，后续重复的事件将回应已消费事件来让发布方不再发送该事件。</p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/about/">关于</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%BC%95%E4%BE%8B"><span class="toc-number">1.</span> <span class="toc-text">引例</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%9A%E5%8A%A1%E6%95%B0%E6%8D%AE%E4%B8%8E%E4%BA%8B%E4%BB%B6%E6%B6%88%E6%81%AF%E7%9A%84%E4%B8%80%E8%87%B4%E6%80%A7"><span class="toc-number">2.</span> <span class="toc-text">业务数据与事件消息的一致性</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E5%A4%84%E7%90%86%E7%9A%84%E5%B9%82%E7%AD%89%E6%80%A7"><span class="toc-number">3.</span> <span class="toc-text">消息处理的幂等性</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&text=基于消息队列解决分布式事务问题"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&title=基于消息队列解决分布式事务问题"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&is_video=false&description=基于消息队列解决分布式事务问题"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=基于消息队列解决分布式事务问题&body=Check out this article: http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&title=基于消息队列解决分布式事务问题"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&title=基于消息队列解决分布式事务问题"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&title=基于消息队列解决分布式事务问题"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&title=基于消息队列解决分布式事务问题"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&name=基于消息队列解决分布式事务问题&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/&t=基于消息队列解决分布式事务问题"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2020-2023
+    seineo
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
