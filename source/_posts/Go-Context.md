@@ -6,64 +6,54 @@ tags:
 
 ## 为什么需要context？
 
-在Go语言中，对于IO密集、并行计算等任务，我们一般都使用轻量的协程来提高程序的效率。比如我们用Go写了一个http服务器，那么一般一个请求就用一个协程处理，在这个请求中我们可能需要去请求数据库、请求别的服务等等，如果一切顺利就最好不过，但是很可能碰到以下情况：
+在Go语言中，对于IO密集、并行计算等任务，我们一般都使用轻量的协程来提高程序的效率。比如我们用Go写了一个http服务器，那么一般一个请求就用一个协程处理，在这个请求中我们可能需要去请求数据库、请求别的服务等等，如果一切顺利就最好不过，但是很可能碰到类似以下情况：
 
 1.  用户退出（比如关闭网页）
 
 2.  下游服务迟迟不返回
 
-对于这些情况，如果我们任由协程继续运行，既让无用任务占用了资源，也很可能影响用户的体验。因此我们需要解决这样一个问题：==如何在协程间传递状态与数据?== 
+对于这些情况，如果我们任由协程继续运行，既让无用任务占用了资源，也很可能影响用户的体验。因此我们需要解决这样一个问题：**如何在协程间传递状态与数据？**
 
 “根据CSP的思想，用channel不就好了。”
 
 是的，我们可以用channel来解决这个问题。比如我们想实现三秒超时则关闭协程：
 
 ```go
-package main
-
-import (
-	"fmt"
-	"sync"
-	"time"
-)
-
 func worker(done chan bool, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for {
-		select {
-		case <-done:
-			fmt.Println("Worker goroutine is closing.")
-			return 
-		default:
-			// 执行工作逻辑
-			fmt.Println("Worker is working...")
-			time.Sleep(1 * time.Second)
-		}
-	}
+    defer wg.Done()
+    for {
+        select {
+        case <-done:
+            fmt.Println("Worker goroutine is closing.")
+            return
+        default:
+            // 执行工作逻辑
+            fmt.Println("Worker is working...")
+            time.Sleep(1 * time.Second)
+        }
+    }
 }
 
 func main() {
-	var wg sync.WaitGroup
+    var wg sync.WaitGroup
+    done := make(chan bool)
+    wg.Add(1)
+    go worker(done, &wg)
 
-	done := make(chan bool)
+    // 使用time.After设置三秒后的超时
+    timeout := time.After(3 * time.Second)
 
-	wg.Add(1)
-	go worker(done, &wg)
+    // 主goroutine等待worker完成或者超时
+    select {
+    case <-timeout:
+        fmt.Println("Timeout reached. Closing worker goroutine.")
+        close(done) // 发送信号到done channel，尝试关闭worker
+    case <-done:
+        fmt.Println("Worker finished before timeout.")
+    }
 
-	// 使用time.After设置三秒后的超时
-	timeout := time.After(3 * time.Second)
-
-	// 主goroutine等待worker完成或者超时
-	select {
-	case <-timeout:
-		fmt.Println("Timeout reached. Closing worker goroutine.")
-		close(done) // 发送信号到done channel，尝试关闭worker
-	case <-done:
-		fmt.Println("Worker finished before timeout.")
-	}
-
-  // 等待所有goroutine完成
-	wg.Wait()
+    // 等待所有goroutine完成
+    wg.Wait()
 }
 ```
 
@@ -84,7 +74,7 @@ func main() {
 
 ```go
 ctxWeb, cancelWeb = context.WithCancel(context.Background())
-svr := api_server.NewApiServer(ctxWeb, p)
+svr := NewApiServer(ctxWeb, p)
 svr.Run()
 
 sigs := make(chan os.Signal, 1)
@@ -102,17 +92,17 @@ cancelWeb()
 
 ```go
 func (h *ApiServer) Run() error {
-  	errCh := make(chan error)
-	go func() {
-		errCh <- srv.ListenAndServe()
-	}()
-
-	select {
-	case e := <-errCh:
-		return e
-	case <-h.context.Done():
-		return srv.Shutdown(h.context) // Shutdown gracefully shuts down the server without interrupting any active connections.
-	}
+    errCh := make(chan error)
+    go func() {
+        errCh <- srv.ListenAndServe()
+    }()
+    
+    select {
+    case e := <-errCh:
+        return e
+    case <-h.context.Done():
+        return srv.Shutdown(h.context) // Shutdown gracefully shuts down the server without interrupting any active connections.
+    }
 }
 ```
 
@@ -156,15 +146,17 @@ func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc) {
 
 3.  递归处理子context。
 
-上述内容涉及一些细节问题：
+
+
+### 实现细节
 
 1.  如何确定context是否已经被cancel？
 
 判断方法是看err是否为空，因为cancel是一定要设置error的，如果error不为空则是被cancel了。
 
-2.  done channel什么时候分配？
+2.  done channel什么时候创建？
 
-并不是在创建context结构体时就分配空间，而是在调用Done()命令获取done channel时才分配（懒汉式）。
+并不是在创建context结构体时就为done channel分配空间，而是在调用Done()命令获取done channel时才分配。因为支持多协程并发获取，因此需要创建过程加锁。（懒汉式单例）
 
 ## 参考
 

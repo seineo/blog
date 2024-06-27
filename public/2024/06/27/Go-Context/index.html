@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="为什么需要context？在Go语言中，对于IO密集、并行计算等任务，我们一般都使用轻量的协程来提高程序的效率。比如我们用Go写了一个http服务器，那么一般一个请求就用一个协程处理，在这个请求中我们可能需要去请求数据库、请求别的服务等等，如果一切顺利就最好不过，但是很可能碰到类似以下情况：  用户退出（比如关闭网页）  下游服务迟迟不返回   对于这些情况，如果我们任由协程继续运行，既让无用任务">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go Context">
+<meta property="og:url" content="http://example.com/2024/06/27/Go-Context/index.html">
+<meta property="og:site_name" content="seineo">
+<meta property="og:description" content="为什么需要context？在Go语言中，对于IO密集、并行计算等任务，我们一般都使用轻量的协程来提高程序的效率。比如我们用Go写了一个http服务器，那么一般一个请求就用一个协程处理，在这个请求中我们可能需要去请求数据库、请求别的服务等等，如果一切顺利就最好不过，但是很可能碰到类似以下情况：  用户退出（比如关闭网页）  下游服务迟迟不返回   对于这些情况，如果我们任由协程继续运行，既让无用任务">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-06-27T13:18:03.000Z">
+<meta property="article:modified_time" content="2024-06-27T13:52:06.763Z">
+<meta property="article:author" content="seineo">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Go Context</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/06/27/Go-Context/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/06/27/Go-Context/&text=Go Context"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/06/27/Go-Context/&title=Go Context"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/06/27/Go-Context/&is_video=false&description=Go Context"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Go Context&body=Check out this article: http://example.com/2024/06/27/Go-Context/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/06/27/Go-Context/&title=Go Context"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/06/27/Go-Context/&title=Go Context"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/06/27/Go-Context/&title=Go Context"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/06/27/Go-Context/&title=Go Context"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/06/27/Go-Context/&name=Go Context&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/06/27/Go-Context/&t=Go Context"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81context%EF%BC%9F"><span class="toc-number">1.</span> <span class="toc-text">为什么需要context？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8context%EF%BC%9F"><span class="toc-number">2.</span> <span class="toc-text">如何使用context？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#context%E6%98%AF%E5%A6%82%E4%BD%95%E8%BF%90%E4%BD%9C%E7%9A%84%EF%BC%9F"><span class="toc-number">3.</span> <span class="toc-text">context是如何运作的？</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82"><span class="toc-number">3.1.</span> <span class="toc-text">实现细节</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">4.</span> <span class="toc-text">参考</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        Go Context
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">seineo</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2024-06-27T13:18:03.000Z" class="dt-published" itemprop="datePublished">2024-06-27</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <h2 id="为什么需要context？"><a href="#为什么需要context？" class="headerlink" title="为什么需要context？"></a>为什么需要context？</h2><p>在Go语言中，对于IO密集、并行计算等任务，我们一般都使用轻量的协程来提高程序的效率。比如我们用Go写了一个http服务器，那么一般一个请求就用一个协程处理，在这个请求中我们可能需要去请求数据库、请求别的服务等等，如果一切顺利就最好不过，但是很可能碰到类似以下情况：</p>
+<ol>
+<li><p>用户退出（比如关闭网页）</p>
+</li>
+<li><p>下游服务迟迟不返回</p>
+</li>
+</ol>
+<p>对于这些情况，如果我们任由协程继续运行，既让无用任务占用了资源，也很可能影响用户的体验。因此我们需要解决这样一个问题：<strong>如何在协程间传递状态与数据？</strong></p>
+<p>“根据CSP的思想，用channel不就好了。”</p>
+<p>是的，我们可以用channel来解决这个问题。比如我们想实现三秒超时则关闭协程：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">worker</span><span class="params">(done <span class="keyword">chan</span> <span class="type">bool</span>, wg *sync.WaitGroup)</span></span> &#123;</span><br><span class="line">    <span class="keyword">defer</span> wg.Done()</span><br><span class="line">    <span class="keyword">for</span> &#123;</span><br><span class="line">        <span class="keyword">select</span> &#123;</span><br><span class="line">        <span class="keyword">case</span> &lt;-done:</span><br><span class="line">            fmt.Println(<span class="string">&quot;Worker goroutine is closing.&quot;</span>)</span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="comment">// 执行工作逻辑</span></span><br><span class="line">            fmt.Println(<span class="string">&quot;Worker is working...&quot;</span>)</span><br><span class="line">            time.Sleep(<span class="number">1</span> * time.Second)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">var</span> wg sync.WaitGroup</span><br><span class="line">    done := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">bool</span>)</span><br><span class="line">    wg.Add(<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">go</span> worker(done, &amp;wg)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 使用time.After设置三秒后的超时</span></span><br><span class="line">    timeout := time.After(<span class="number">3</span> * time.Second)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 主goroutine等待worker完成或者超时</span></span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> &lt;-timeout:</span><br><span class="line">        fmt.Println(<span class="string">&quot;Timeout reached. Closing worker goroutine.&quot;</span>)</span><br><span class="line">        <span class="built_in">close</span>(done) <span class="comment">// 发送信号到done channel，尝试关闭worker</span></span><br><span class="line">    <span class="keyword">case</span> &lt;-done:</span><br><span class="line">        fmt.Println(<span class="string">&quot;Worker finished before timeout.&quot;</span>)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 等待所有goroutine完成</span></span><br><span class="line">    wg.Wait()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<p>​    </p>
+<p>这样当然可以，但是一般的应用开发会有多层协程调用，比如A -&gt; B -&gt; C，如果A想关闭B，当B接收到终止信号并决定退出时，B应该也要负责通知C也退出。那么每个协程都需要有上述代码这样的channel处理逻辑，这对开发人员来说负担较重。</p>
+<p>因此，Go 1.7版本引入了context。</p>
+<blockquote>
+<p>Context provides a means of transmitting deadlines, caller cancellations, and other request-scoped values across API boundaries and between processes.</p>
+</blockquote>
+<h2 id="如何使用context？"><a href="#如何使用context？" class="headerlink" title="如何使用context？"></a>如何使用context？</h2><p>我们以http服务的优雅关闭为例来简要阐述下context的常见用法。</p>
+<p>当收到进程退出的信号时，我们捕获信号，来执行协程的优雅关闭：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">ctxWeb, cancelWeb = context.WithCancel(context.Background())</span><br><span class="line">svr := NewApiServer(ctxWeb, p)</span><br><span class="line">svr.Run()</span><br><span class="line"></span><br><span class="line">sigs := <span class="built_in">make</span>(<span class="keyword">chan</span> os.Signal, <span class="number">1</span>)</span><br><span class="line">signal.Notify(sigs,</span><br><span class="line">    syscall.SIGHUP,</span><br><span class="line">    syscall.SIGINT,</span><br><span class="line">    syscall.SIGTERM,</span><br><span class="line">    syscall.SIGQUIT)</span><br><span class="line"><span class="keyword">defer</span> signal.Stop(sigs)</span><br><span class="line">_ = &lt;-sigs</span><br><span class="line">cancelWeb()</span><br></pre></td></tr></table></figure>
+
+<p><code>cancelWeb</code>执行后，<code>context.Done()</code>返回的通道则会被关闭，那么由于通道的广播机制，select也就会收到事件，来执行http.Server的优雅关闭函数：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h *ApiServer)</span></span> Run() <span class="type">error</span> &#123;</span><br><span class="line">    errCh := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="type">error</span>)</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">        errCh &lt;- srv.ListenAndServe()</span><br><span class="line">    &#125;()</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> e := &lt;-errCh:</span><br><span class="line">        <span class="keyword">return</span> e</span><br><span class="line">    <span class="keyword">case</span> &lt;-h.context.Done():</span><br><span class="line">        <span class="keyword">return</span> srv.Shutdown(h.context) <span class="comment">// Shutdown gracefully shuts down the server without interrupting any active connections.</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="context是如何运作的？"><a href="#context是如何运作的？" class="headerlink" title="context是如何运作的？"></a>context是如何运作的？</h2><p>context的常用接口有以下三个：</p>
+<ul>
+<li><p>WithCancel：创建可取消的context，返回cancelFunc用于手动调用取消。</p>
+</li>
+<li><p>WithTimeout：指定超时的相对时间，超时则自动取消。</p>
+</li>
+<li><p>WithDeadline：指定超时的绝对时间，超时自动取消。</p>
+</li>
+</ul>
+<p>其中WithTimeout就是对WithDeadline的封装：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WithTimeout</span><span class="params">(parent Context, timeout time.Duration)</span></span> (Context, CancelFunc) &#123;</span><br><span class="line">	<span class="keyword">return</span> WithDeadline(parent, time.Now().Add(timeout))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>三个接口重点都是如何取消协程context与调用的所有子孙context，这其实涉及两个问题：</p>
+<ol>
+<li><p>如何链接父子context？</p>
+</li>
+<li><p>如何取消当前context与所有子孙context？</p>
+</li>
+</ol>
+<p>对于第一个问题，由<code>propagateCancel</code>函数解决：</p>
+<ol>
+<li><p>如果父context已经被cancel，则cancel子context，然后直接返回；</p>
+</li>
+<li><p>否则将子context加入父context的map字段children中。</p>
+</li>
+</ol>
+<p>对于第二个问题，由<code>cancel</code>函数解决：</p>
+<ol>
+<li><p>如果context已经被cancel，直接返回；</p>
+</li>
+<li><p>否则设置cancel的error和cause，然后关闭done这个channel；【由于Go channel的广播机制（当一个channel被close时，所有通过select监听这个channel IO事件的goroutine，都会收到相关事件），监听的协程可以做相应的处理】</p>
+</li>
+<li><p>递归处理子context。</p>
+</li>
+</ol>
+<h3 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a>实现细节</h3><ol>
+<li>如何确定context是否已经被cancel？</li>
+</ol>
+<p>判断方法是看err是否为空，因为cancel是一定要设置error的，如果error不为空则是被cancel了。</p>
+<ol start="2">
+<li>done channel什么时候创建？</li>
+</ol>
+<p>并不是在创建context结构体时就为done channel分配空间，而是在调用Done()命令获取done channel时才分配。因为支持多协程并发获取，因此需要创建过程加锁。（懒汉式单例）</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ol>
+<li><p><a target="_blank" rel="noopener" href="https://golang.design/go-questions/stdlib/context/why/">https://golang.design/go-questions/stdlib/context/why/</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://go.dev/blog/context-and-structs">https://go.dev/blog/context-and-structs</a></p>
+</li>
+</ol>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/about/">关于</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81context%EF%BC%9F"><span class="toc-number">1.</span> <span class="toc-text">为什么需要context？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8context%EF%BC%9F"><span class="toc-number">2.</span> <span class="toc-text">如何使用context？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#context%E6%98%AF%E5%A6%82%E4%BD%95%E8%BF%90%E4%BD%9C%E7%9A%84%EF%BC%9F"><span class="toc-number">3.</span> <span class="toc-text">context是如何运作的？</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82"><span class="toc-number">3.1.</span> <span class="toc-text">实现细节</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">4.</span> <span class="toc-text">参考</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/06/27/Go-Context/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/06/27/Go-Context/&text=Go Context"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/06/27/Go-Context/&title=Go Context"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/06/27/Go-Context/&is_video=false&description=Go Context"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Go Context&body=Check out this article: http://example.com/2024/06/27/Go-Context/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/06/27/Go-Context/&title=Go Context"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/06/27/Go-Context/&title=Go Context"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/06/27/Go-Context/&title=Go Context"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/06/27/Go-Context/&title=Go Context"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/06/27/Go-Context/&name=Go Context&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/06/27/Go-Context/&t=Go Context"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2020-2024
+    seineo
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
