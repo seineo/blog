@@ -10,7 +10,7 @@ date: 2024-03-15 16:05:30
 
 ### 三值逻辑
 
-关系数据库使用`NULL`来表示**无数据**，即可以有值，但还不知道填什么值。`NULL`可以是任何值，也就无法判断一个值与 `NULL` 的比较结果是真还是假，这就是除了`True`与`False`，第三个逻辑值`Unnkown`出现的原因。
+关系数据库使用`NULL`来表示**无数据**，即可以有值，但还不知道填什么值。`NULL`可以是任何值，也就无法判断一个值与 `NULL` 的比较结果是真还是假，这就是除了`True`与`False`，第三个逻辑值`Unknown`出现的原因。
 
 `NULL`表示未知的值，那么我们判断一个数据是否是`NULL`，就不能用`a = NULL`这样的写法，因为`NULL`未知，这样写的结果只会是`Unknown`，因此数据库引入IS NULL或IS NOT NULL来判断`NULL`。
 
@@ -34,7 +34,7 @@ WHERE field1 <> 'test' OR field1 IS NULL;
 
 遇到`NULL`数据时，运算表达式为`NULL <> 'test' OR NULL IS NULL`， 由于后者为`True`，因此会将该记录放入结果集合。
 
-对于`Unknown`在逻辑运算式的计算规则，只需要记住：**如果结果依赖于Unkown，则结果为Unkown，否则Unknown无影响。**什么叫**“依赖”**呢？比如上面的例子：`Unknown OR True`，或运算符的右边已经为`True`了，根据或运算的计算规则这个运算结果已经确定为`True`了，左边具体是什么已经不重要了，这就是结果不依赖于`Unknown`本身，不影响结果为`True`；如果运算式为`Unknown OR Unkown`，那么运算结果依赖于`Unknown`，返回`Unknown`。
+对于`Unknown`在逻辑运算式的计算规则，只需要记住：**如果结果依赖于Unknown，则结果为Unknown，否则Unknown无影响。**什么叫**“依赖”**呢？比如上面的例子：`Unknown OR True`，或运算符的右边已经为`True`了，根据或运算的计算规则这个运算结果已经确定为`True`了，左边具体是什么已经不重要了，这就是结果不依赖于`Unknown`本身，不影响结果为`True`；如果运算式为`Unknown OR Unknown`，那么运算结果依赖于`Unknown`，返回`Unknown`。
 
 ### 分页数据重复
 

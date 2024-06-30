@@ -6,15 +6,15 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="HandheldFriendly" content="True">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-    <meta name="description" content="后端开发时常常会与数据库打交道，无论是写业务逻辑还是配置监控，SQL是必不可少的。 MySQL语法三值逻辑关系数据库使用NULL来表示无数据，即可以有值，但还不知道填什么值。NULL可以是任何值，也就无法判断一个值与 NULL 的比较结果是真还是假，这就是除了True与False，第三个逻辑值Unnkown出现的原因。 NULL表示未知的值，那么我们判断一个数据是否是NULL，就不能用a &#x3D; NU">
+    <meta name="description" content="后端开发时常常会与数据库打交道，无论是写业务逻辑还是配置监控，SQL是必不可少的。 MySQL语法三值逻辑关系数据库使用NULL来表示无数据，即可以有值，但还不知道填什么值。NULL可以是任何值，也就无法判断一个值与 NULL 的比较结果是真还是假，这就是除了True与False，第三个逻辑值Unknown出现的原因。 NULL表示未知的值，那么我们判断一个数据是否是NULL，就不能用a &#x3D; NU">
 <meta property="og:type" content="article">
 <meta property="og:title" content="SQL踩坑记录">
 <meta property="og:url" content="http://example.com/2024/03/15/SQL%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/index.html">
 <meta property="og:site_name" content="seineo">
-<meta property="og:description" content="后端开发时常常会与数据库打交道，无论是写业务逻辑还是配置监控，SQL是必不可少的。 MySQL语法三值逻辑关系数据库使用NULL来表示无数据，即可以有值，但还不知道填什么值。NULL可以是任何值，也就无法判断一个值与 NULL 的比较结果是真还是假，这就是除了True与False，第三个逻辑值Unnkown出现的原因。 NULL表示未知的值，那么我们判断一个数据是否是NULL，就不能用a &#x3D; NU">
+<meta property="og:description" content="后端开发时常常会与数据库打交道，无论是写业务逻辑还是配置监控，SQL是必不可少的。 MySQL语法三值逻辑关系数据库使用NULL来表示无数据，即可以有值，但还不知道填什么值。NULL可以是任何值，也就无法判断一个值与 NULL 的比较结果是真还是假，这就是除了True与False，第三个逻辑值Unknown出现的原因。 NULL表示未知的值，那么我们判断一个数据是否是NULL，就不能用a &#x3D; NU">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2024-03-15T08:05:30.000Z">
-<meta property="article:modified_time" content="2024-06-29T16:00:22.166Z">
+<meta property="article:modified_time" content="2024-06-30T01:07:01.174Z">
 <meta property="article:author" content="seineo">
 <meta name="twitter:card" content="summary">
     
@@ -155,7 +155,7 @@
 
   <div class="content e-content" itemprop="articleBody">
     <p>后端开发时常常会与数据库打交道，无论是写业务逻辑还是配置监控，SQL是必不可少的。</p>
-<h2 id="MySQL语法"><a href="#MySQL语法" class="headerlink" title="MySQL语法"></a>MySQL语法</h2><h3 id="三值逻辑"><a href="#三值逻辑" class="headerlink" title="三值逻辑"></a>三值逻辑</h3><p>关系数据库使用<code>NULL</code>来表示<strong>无数据</strong>，即可以有值，但还不知道填什么值。<code>NULL</code>可以是任何值，也就无法判断一个值与 <code>NULL</code> 的比较结果是真还是假，这就是除了<code>True</code>与<code>False</code>，第三个逻辑值<code>Unnkown</code>出现的原因。</p>
+<h2 id="MySQL语法"><a href="#MySQL语法" class="headerlink" title="MySQL语法"></a>MySQL语法</h2><h3 id="三值逻辑"><a href="#三值逻辑" class="headerlink" title="三值逻辑"></a>三值逻辑</h3><p>关系数据库使用<code>NULL</code>来表示<strong>无数据</strong>，即可以有值，但还不知道填什么值。<code>NULL</code>可以是任何值，也就无法判断一个值与 <code>NULL</code> 的比较结果是真还是假，这就是除了<code>True</code>与<code>False</code>，第三个逻辑值<code>Unknown</code>出现的原因。</p>
 <p><code>NULL</code>表示未知的值，那么我们判断一个数据是否是<code>NULL</code>，就不能用<code>a = NULL</code>这样的写法，因为<code>NULL</code>未知，这样写的结果只会是<code>Unknown</code>，因此数据库引入IS NULL或IS NOT NULL来判断<code>NULL</code>。</p>
 <p>习惯二值逻辑的我们，很容易在写查询语句的时候没有考虑到<code>NULL</code>，从而有可能导致查询结果不符合预期。比如我们有一张users表，我们希望查出field1字段（允许为<code>NULL</code>）不为test的数据，我们很容易写出：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> users</span><br><span class="line"><span class="keyword">WHERE</span> field1 <span class="operator">&lt;&gt;</span> <span class="string">&#x27;test&#x27;</span>;</span><br></pre></td></tr></table></figure>
@@ -165,7 +165,7 @@
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> users</span><br><span class="line"><span class="keyword">WHERE</span> field1 <span class="operator">&lt;&gt;</span> <span class="string">&#x27;test&#x27;</span> <span class="keyword">OR</span> field1 <span class="keyword">IS</span> <span class="keyword">NULL</span>;</span><br></pre></td></tr></table></figure>
 
 <p>遇到<code>NULL</code>数据时，运算表达式为<code>NULL &lt;&gt; &#39;test&#39; OR NULL IS NULL</code>， 由于后者为<code>True</code>，因此会将该记录放入结果集合。</p>
-<p>对于<code>Unknown</code>在逻辑运算式的计算规则，只需要记住：<strong>如果结果依赖于Unkown，则结果为Unkown，否则Unknown无影响。</strong>什么叫<strong>“依赖”</strong>呢？比如上面的例子：<code>Unknown OR True</code>，或运算符的右边已经为<code>True</code>了，根据或运算的计算规则这个运算结果已经确定为<code>True</code>了，左边具体是什么已经不重要了，这就是结果不依赖于<code>Unknown</code>本身，不影响结果为<code>True</code>；如果运算式为<code>Unknown OR Unkown</code>，那么运算结果依赖于<code>Unknown</code>，返回<code>Unknown</code>。</p>
+<p>对于<code>Unknown</code>在逻辑运算式的计算规则，只需要记住：<strong>如果结果依赖于Unknown，则结果为Unknown，否则Unknown无影响。</strong>什么叫<strong>“依赖”</strong>呢？比如上面的例子：<code>Unknown OR True</code>，或运算符的右边已经为<code>True</code>了，根据或运算的计算规则这个运算结果已经确定为<code>True</code>了，左边具体是什么已经不重要了，这就是结果不依赖于<code>Unknown</code>本身，不影响结果为<code>True</code>；如果运算式为<code>Unknown OR Unknown</code>，那么运算结果依赖于<code>Unknown</code>，返回<code>Unknown</code>。</p>
 <h3 id="分页数据重复"><a href="#分页数据重复" class="headerlink" title="分页数据重复"></a>分页数据重复</h3><p>之前在查看分页数据时，发现有时同一条数据会在不同页重复出现，但排查发现页码和页数据量都正确传入，SQL语句也符合预期，SQL可以极致简化为：</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> a, b, c</span><br><span class="line"><span class="keyword">FROM</span> table_test</span><br><span class="line">LIMIT ps <span class="keyword">OFFSET</span> p</span><br></pre></td></tr></table></figure>
 
