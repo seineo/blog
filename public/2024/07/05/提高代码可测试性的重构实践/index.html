@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="通过简要介绍一个为了方便单元测试而重构代码的案例，提供编写具备良好可测试性代码的思路。 背景ServiceA是一个负责与A服务交互的接口，其默认的实现serviceA依赖于 serviceB.APIClient这一与B服务交互的SDK client，这一client需要在每次接收到请求时根据从resource表读取出的实时URL构建。根据这一逻辑，我们很容易写出以下代码： 123456789101">
+<meta property="og:type" content="article">
+<meta property="og:title" content="提高代码可测试性的重构实践">
+<meta property="og:url" content="http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/index.html">
+<meta property="og:site_name" content="seineo">
+<meta property="og:description" content="通过简要介绍一个为了方便单元测试而重构代码的案例，提供编写具备良好可测试性代码的思路。 背景ServiceA是一个负责与A服务交互的接口，其默认的实现serviceA依赖于 serviceB.APIClient这一与B服务交互的SDK client，这一client需要在每次接收到请求时根据从resource表读取出的实时URL构建。根据这一逻辑，我们很容易写出以下代码： 123456789101">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-07-05T13:21:20.058Z">
+<meta property="article:modified_time" content="2024-07-05T14:55:37.461Z">
+<meta property="article:author" content="seineo">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>提高代码可测试性的重构实践</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2024/06/27/Go-Context/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&text=提高代码可测试性的重构实践"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&title=提高代码可测试性的重构实践"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&is_video=false&description=提高代码可测试性的重构实践"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=提高代码可测试性的重构实践&body=Check out this article: http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&title=提高代码可测试性的重构实践"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&title=提高代码可测试性的重构实践"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&title=提高代码可测试性的重构实践"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&title=提高代码可测试性的重构实践"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&name=提高代码可测试性的重构实践&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&t=提高代码可测试性的重构实践"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%97%AE%E9%A2%98"><span class="toc-number">2.</span> <span class="toc-text">问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3"><span class="toc-number">3.</span> <span class="toc-text">解决</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        提高代码可测试性的重构实践
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">seineo</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2024-07-05T13:21:20.058Z" class="dt-published" itemprop="datePublished">2024-07-05</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <p>通过简要介绍一个为了方便单元测试而重构代码的案例，提供编写具备良好可测试性代码的思路。</p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p><code>ServiceA</code>是一个负责与<code>A</code>服务交互的接口，其默认的实现<code>serviceA</code>依赖于 <code>serviceB.APIClient</code>这一与<code>B</code>服务交互的SDK client，这一client需要在每次接收到请求时根据从resource表读取出的实时URL构建。根据这一逻辑，我们很容易写出以下代码：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// ServiceA接口定义</span></span><br><span class="line"><span class="keyword">type</span> ServiceA <span class="keyword">interface</span> &#123;</span><br><span class="line">  <span class="comment">// 支持的方法</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ServiceA的默认实现</span></span><br><span class="line"><span class="keyword">type</span> serivceA <span class="keyword">struct</span> &#123;</span><br><span class="line">  <span class="comment">// 成员</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// serviceA结构体的初始化函数</span></span><br><span class="line"><span class="comment">// resourceRepo是resource表操作的抽象接口</span></span><br><span class="line"><span class="comment">// ……</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewServiceA</span><span class="params">(ctx context.Context, resourceRepo repository.ResourceRepo, serviceType <span class="type">string</span>, basePath <span class="type">string</span>, accessld <span class="type">string</span>, accessKey <span class="type">string</span>)</span></span> ServiceA &#123;</span><br><span class="line">  <span class="keyword">return</span> &amp;serviceA&#123;</span><br><span class="line">    <span class="comment">// 初始化</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取serivceB的sdk client</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *serviceA)</span></span> getServiceBClient(param <span class="type">string</span>) (*serviceB.APIClient, <span class="type">error</span>) &#123;</span><br><span class="line">    addr, err := s.resourceRepo.GetServiceBAddr()</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>, err</span><br><span class="line">    &#125;</span><br><span class="line">    basePath := fmt.Sprintf(<span class="string">&quot;%s/v1&quot;</span>, addr)</span><br><span class="line">    <span class="keyword">return</span> serviceB.NewAPIClient(serviceB.Configuration&#123;</span><br><span class="line">        BasePath: basePath,</span><br><span class="line">        DefaultHeader: <span class="keyword">map</span>[<span class="type">string</span>]<span class="type">string</span>&#123;</span><br><span class="line">            <span class="string">&quot;PARAM&quot;</span>: fmt.Sprintf(<span class="string">&quot;param=%s&quot;</span>, param)</span><br><span class="line">        &#125;), <span class="literal">nil</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取serviceA的url</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *serviceA)</span></span> getServiceAUrl(param <span class="type">string</span>) (<span class="type">string</span>, <span class="type">error</span>) &#123;</span><br><span class="line">    client, err := s.getServiceBClient(param)</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;&quot;</span>, err</span><br><span class="line">    &#125;</span><br><span class="line">    services, _, err := client.ServiceApi.FindServices(ctx, <span class="keyword">map</span>[<span class="type">string</span>]<span class="keyword">interface</span>&#123;&#125;&#123;</span><br><span class="line">        <span class="string">&quot;serviceTypeName&quot;</span>: s.serviceType,</span><br><span class="line">        <span class="string">&quot;locationId&quot;</span>: <span class="number">1</span>,</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;                      </span><br><span class="line"></span><br><span class="line"><span class="comment">// serviceA的应用服务，实际完成对serviceA的请求</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *serviceA)</span></span> GetData (param <span class="type">string</span>) (*dto.ServiceAResponse, <span class="type">error</span>) &#123;</span><br><span class="line">    uri, err := s.getServiceAUrl(param)</span><br><span class="line">    <span class="comment">// 请求serviceA...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>可以看到，由于<code>serviceB.APIClient</code>不是初始化<code>serviceA</code>时就构建，而是后续每次请求处理时读表构建，因此<code>NewServiceA</code>函数习惯性地将client实际依赖的<code>resource</code>表的抽象接口作为依赖项注入进来，用于后续client的构建。这样的问题在于，对<code>serviceA</code>进行单元测试时，无法mock <code>serviceB.APIClient</code>的行为，我们需要进行代码重构。</p>
+<h2 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h2><p><strong>依赖倒置原则：面向接口编程</strong></p>
+<blockquote>
+<p>  有两层含义：</p>
+<ul>
+<li>高层模块不应该依赖于低层模块，二者都应该依赖于抽象；</li>
+<li>抽象不应该依赖于细节，细节应该依赖于抽象。</li>
+</ul>
+</blockquote>
+<p>其实之前的代码，也是遵循这一原则的，毕竟<code>ResourceRepo</code>就是对<code>resource</code>表操作的抽象，但是抽象的是client的内部依赖，我们应该聚焦于整体而非局部，也就是说应该抽象client的行为。那么我们会想到：将<code>serviceB.APIClient</code>的操作抽象为接口，然后serviceA依赖于该接口就可以了吧？代码可以写成：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> ServiceBClient <span class="keyword">interface</span> &#123;</span><br><span class="line">    <span class="comment">// 方法</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewServiceA</span><span class="params">(client ServiceBClient, ...)</span></span> &#123;</span><br><span class="line">    <span class="comment">// 初始化</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>还是那个问题：client的构建并不是外部依赖注入的，而是每次从数据库中读取的，这并不符合业务逻辑。仔细想想，<strong>其实我们并不关心client是怎么构建出来的，我们只关心client需要每次通过某种方式构建出来，然后我们需要调用client的方法</strong>，因此我们把client的构建也作为抽象的方法就好了！类似工厂模式，我们调用构建的抽象方法，具体如何构建我们并不关心，因此我们可以写出以下代码：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> ServiceBClient <span class="keyword">interface</span> &#123;</span><br><span class="line">    FindServices(ctx context.Context, options <span class="keyword">map</span>[stringlinterface) (ServicesApiResponsePaginated, *http.Response, <span class="type">error</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> ServiceBClientFactory <span class="keyword">interface</span> &#123;</span><br><span class="line">     GetServiceBClientFactory(unit <span class="type">string</span>) (ServiceBClient, <span class="type">error</span>)</span><br><span class="line">&#125;</span><br><span class="line">                                                  </span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewServiceA</span><span class="params">(factory ServiceBClientFactory, ...)</span></span> &#123;</span><br><span class="line">     <span class="comment">// 初始化                   </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>可测试性是可维护性的基础，本文概述了单元测试反推代码重构的一个案例，这一次的重构使得模块间的依赖更合理了，再一次验证好的代码是重构出来的。那么为了使得代码更具可测试性，可以参考以下思路：</p>
+<ol>
+<li>聚焦高层模块需要低层模块提供的行为，根据这些行为定义抽象接口。</li>
+<li>通过依赖注入，实现可扩展与可测试。</li>
+</ol>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/about/">关于</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%97%AE%E9%A2%98"><span class="toc-number">2.</span> <span class="toc-text">问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3"><span class="toc-number">3.</span> <span class="toc-text">解决</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">4.</span> <span class="toc-text">总结</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&text=提高代码可测试性的重构实践"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&title=提高代码可测试性的重构实践"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&is_video=false&description=提高代码可测试性的重构实践"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=提高代码可测试性的重构实践&body=Check out this article: http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&title=提高代码可测试性的重构实践"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&title=提高代码可测试性的重构实践"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&title=提高代码可测试性的重构实践"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&title=提高代码可测试性的重构实践"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&name=提高代码可测试性的重构实践&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/&t=提高代码可测试性的重构实践"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2020-2024
+    seineo
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
