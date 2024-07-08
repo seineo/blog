@@ -53,6 +53,47 @@ LIMIT ps OFFSET p
 
 也就是说MySQL查询结果顺序会收到数据存储的位置、数据结构等的影响，在没有对唯一字段（比如unique key、primary key）ORDER BY的情况下，结果顺序是不保证的。上述例子就是因为SQL语句并没有对字段排序，导致结果随机返回，只需要加上对**唯一字段**的排序即可。
 
+### 锁定读
+
+遇到一个其实在业务中挺常见的数据库操作需求，可以分为三步：
+
+1.   根据条件查询数据；
+2.   对查询出来的数据进行数值判断；
+3.   如果符合要求则更改写入数据库。
+
+那我们可能会想，将这三步放入一个事务中执行就确保了操作的安全性。其实不然，我们可以看一个伪代码展示的例子：
+
+```sql
+BEGIN;
+SELECT balance FROM accounts WHERE user='xiaoming';
+if balance > = 500:
+	UPDATE accounts SET balance = balance - 500 WHERE user='xiaoming';
+	UPDATE accounts SET balance = balance + 500 WHERE user='xiaohong';
+COMMIT;
+```
+
+逻辑十分简单，我们查询`xiaoming`同学的余额，如果余额不低于500，那么就向`xiaohong`同学转账500元。我们可以想象在另外一个事务中，`xiaoming`也尝试向`xiaoli`同学转账500元，那么当并发执行时，有可能他们都通过了第三行的判断语句，然后排队更新，那么结果就是即使`xiaoming`同学余额只有500块钱，那么在没有数据库完整性（如定义balance字段不小于0）的前提下，`xiaoming`同学的余额会变为-500元，而`xiaohong`和`xiaoli`同学的余额都成功增加了500元。上述结局是银行不想看见的:)
+
+那么为了保证事务中查询操作后的插入与更新操作的安全性，MySQL的InnoDB引擎提供了锁定读（Locking Reads），这里仅是简要介绍，更多细节见[官方文档](https://dev.mysql.com/doc/refman/8.4/en/innodb-locking-reads.html)。
+
+简单来说，锁定读分为两种类型：
+
+1.   `SELECT ... FOR SHARE`：给查询的行设置共享锁，在事务提交前不可被更改。可以用于保证事务中查询操作后的插入操作。
+2.   `SELECT ... FOR UPDATE`：给查询的行设置排他锁（相当于UPDATE操作），在事务提交前不可被更改、加读锁等，但是普通的SELECT语句可以读取到这些行，因为SELECT是一致性读（多版本控制，读取的是快照）。可以用于保证事务中查询操作后的更新操作。
+
+**使用时的注意事项：需要在事务中使用，锁在事务提交或回滚后才释放。**
+
+如果某行被事务锁定，则请求同一锁定行的 `SELECT ... FOR UPDATE` 或 `SELECT ... FOR SHARE` 事务必须等待，直到阻塞事务释放行锁。此行为可防止事务更新或删除其他事务查询更新的行。但是，如果我们在有些业务场景希望查询在请求的行被锁定时立即返回（比如抢锁，不是第一个拿到，后面的就可以放弃了），或者如果可以接受从结果集中排除锁定的行，则分别可以加上`NOWAIT`和`SKIP LOCKED`选项。
+
+注意`SELECT ... FOR UPDATE NOWAIT`在请求的行被锁定时，直接返回的是错误：
+
+```SQL
+mysql> SELECT * FROM tests where unique_id='unique' FOR UPDATE NOWAIT;
+ERROR 3572 (HY000): Statement aborted because lock(s) could not be acquired immediately and NOWAIT is set.
+```
+
+
+
 ## 慢查询
 
 ### 索引失效
