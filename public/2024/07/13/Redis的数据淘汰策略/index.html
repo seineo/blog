@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="P.S. 本文主要参考的是Redis 2.6版本的源码，但也在最后提及了Redis 7.0.3版本达到内存限制时的数据淘汰策略。  Redis有两种情况需要进行数据淘汰：  数据过期：用户可以为每个键设置一个过期时间，当键达到指定的过期时间时，Redis会自动将其删除，以确保数据的及时性和有效性。 内存限制：当Redis的内存使用达到预设的限制时，系统会根据配置的策略进行数据淘汰。这些策略帮">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis的数据淘汰策略">
+<meta property="og:url" content="http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/index.html">
+<meta property="og:site_name" content="seineo">
+<meta property="og:description" content="P.S. 本文主要参考的是Redis 2.6版本的源码，但也在最后提及了Redis 7.0.3版本达到内存限制时的数据淘汰策略。  Redis有两种情况需要进行数据淘汰：  数据过期：用户可以为每个键设置一个过期时间，当键达到指定的过期时间时，Redis会自动将其删除，以确保数据的及时性和有效性。 内存限制：当Redis的内存使用达到预设的限制时，系统会根据配置的策略进行数据淘汰。这些策略帮">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-07-13T09:08:43.000Z">
+<meta property="article:modified_time" content="2024-07-13T09:57:27.212Z">
+<meta property="article:author" content="seineo">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Redis的数据淘汰策略</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2024/07/05/%E6%8F%90%E9%AB%98%E4%BB%A3%E7%A0%81%E5%8F%AF%E6%B5%8B%E8%AF%95%E6%80%A7%E7%9A%84%E9%87%8D%E6%9E%84%E5%AE%9E%E8%B7%B5/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&text=Redis的数据淘汰策略"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&title=Redis的数据淘汰策略"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&is_video=false&description=Redis的数据淘汰策略"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Redis的数据淘汰策略&body=Check out this article: http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&title=Redis的数据淘汰策略"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&title=Redis的数据淘汰策略"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&title=Redis的数据淘汰策略"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&title=Redis的数据淘汰策略"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&name=Redis的数据淘汰策略&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&t=Redis的数据淘汰策略"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E8%BF%87%E6%9C%9F"><span class="toc-number">1.</span> <span class="toc-text">数据过期</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%83%B0%E6%80%A7%E5%88%A0%E9%99%A4"><span class="toc-number">1.1.</span> <span class="toc-text">惰性删除</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9A%E6%97%B6%E5%88%A0%E9%99%A4"><span class="toc-number">1.2.</span> <span class="toc-text">定时删除</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q-A"><span class="toc-number">1.3.</span> <span class="toc-text">Q&amp;A</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E9%99%90%E5%88%B6"><span class="toc-number">2.</span> <span class="toc-text">内存限制</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#LRU"><span class="toc-number">2.1.</span> <span class="toc-text">LRU</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#LFU"><span class="toc-number">2.2.</span> <span class="toc-text">LFU</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">3.</span> <span class="toc-text">总结</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        Redis的数据淘汰策略
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">seineo</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2024-07-13T09:08:43.000Z" class="dt-published" itemprop="datePublished">2024-07-13</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <blockquote>
+<p>  P.S. 本文主要参考的是Redis 2.6版本的源码，但也在最后提及了Redis 7.0.3版本达到内存限制时的数据淘汰策略。</p>
+</blockquote>
+<p>Redis有两种情况需要进行数据淘汰：</p>
+<ol>
+<li><strong>数据过期</strong>：用户可以为每个键设置一个过期时间，当键达到指定的过期时间时，Redis会自动将其删除，以确保数据的及时性和有效性。</li>
+<li><strong>内存限制</strong>：当Redis的内存使用达到预设的限制时，系统会根据配置的策略进行数据淘汰。这些策略帮助Redis在内存有限的情况下，尽可能保留重要数据，同时删除不常使用或过期的数据，保证系统的稳定运行。</li>
+</ol>
+<h2 id="数据过期"><a href="#数据过期" class="headerlink" title="数据过期"></a>数据过期</h2><p>Redis处理过期键是 <strong>惰性删除+定时删除</strong> 的组合，通过结合这两种删除策略，Redis既能在低负载情况下通过惰性删除减少不必要的资源消耗，又能通过定时删除确保过期键不会长期占用内存，从而优化系统的整体性能和内存使用。</p>
+<h3 id="惰性删除"><a href="#惰性删除" class="headerlink" title="惰性删除"></a>惰性删除</h3><p>在数据库读写键时，Redis会调用<code>expireIfNeeded</code> 函数检查键是否过期，是则删除。然后才会在数据字典中查找键，记录信息，如果存在则更新LRU。</p>
+<p><code>expireIfNeeded</code> 函数会从过期字典中获取过期时间， 没有过期时间直接返回，否则</p>
+<ul>
+<li>如果本节点是master节点，则判断当前时间是否大于过期时间，是则传播过期命令，然后从数据字典删除数据。</li>
+<li>如果本节点是slave节点，则直接返回，因为slave节点的过期是由主节点通过发送 DEL命令来删除的，不必自主删除。</li>
+</ul>
+<p>其中“传播过期命令”是由<code>propagateExpire</code>函数完成的，是当一个键在master节点中过期时，传播一个<code>DEL</code>命令到所有slave节点，并添加到AOF文件，保证数据一致性。</p>
+<h3 id="定时删除"><a href="#定时删除" class="headerlink" title="定时删除"></a>定时删除</h3><p>Redis的cron是默认每10ms调用一次，其中定时主动删除过期key的函数为<code>activeExpireCycle</code> 。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/* Try to expire a few timed out keys. The algorithm used is adaptive and</span><br><span class="line">  will use few CPU cycles if there are few expiring keys, otherwise</span><br><span class="line">  it will get more aggressive to avoid that too much memory is used by</span><br><span class="line">  keys that can be removed from the keyspace. */</span><br></pre></td></tr></table></figure>
+
+<p>从注释可以看出，Redis的定期删除是一种自适应的算法，如果过期的键比较少那么占用的CPU时间就短，过期键比较多就会为了避免内存占用过高而用更长的CPU时间去清除数据。</p>
+<p>步骤如下：</p>
+<ol>
+<li>遍历处理每个db，获取当前db的expires过期字典。</li>
+<li>如果expires键数量不到expires分配大小的1%，则暂时不处理。</li>
+<li>否则每次随机抽取<code>REDIS_EXPIRELOOKUPS_PER_CRON</code>（默认为10）个键，如果过期则删除，并将expired计数加一。如果这次expired的个数超过<code>REDIS_EXPIRELOOKUPS_PER_CRON</code>的25%，则说明过期键比较多，继续这一个循环删除。</li>
+<li>即使过期键很多，也不能过多占用cpu时间，Redis设置了该cron的最长占用时间，每16次循环判断一下cron执行是否超时，是则结束。</li>
+</ol>
+<h3 id="Q-A"><a href="#Q-A" class="headerlink" title="Q&amp;A"></a>Q&amp;A</h3><p>Q：定时删除是多线程执行的吗？那这样不是得加锁？</p>
+<p>A：定时删除并不是多线程执行的，它属于Redis的一个定时任务，定时任务会作为一种时间事件（TimeEvent）通过<code>aeCreateTimeEvent</code>函数注册到Redis使用的Reactor框架中去，然后利用I0多路复用，单线程地完成这些任务，十分巧妙地避免了多线程导致的锁竞争问题。</p>
+<h2 id="内存限制"><a href="#内存限制" class="headerlink" title="内存限制"></a>内存限制</h2><p>当我们在Redis配置文件中设置<code>maxmemory &lt;byte&gt;</code> 后，Redis会定时调用<code>freeMemoryIfNeeded</code> 函数，它会检查Redis当前的内存占用，如果超过了内存限制，则根据配置的淘汰策略不断挑选出最符合要求的键并删除掉，直到内存占用低于指定的最大内存限制。</p>
+<p>Redis 2.6版本支持LRU、TTL、random以及noeviction这四种淘汰策略，随着Redis版本的迭代，也支持了越来越多的淘汰策略，比如我现在在使用的Redis 7.0.3版本，根据<code>Redis.conf</code>文件我们可以看到有8种淘汰策略：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">volatile-lru -&gt; Evict using approximated LRU, only keys with an expire set.</span><br><span class="line">allkeys-lru -&gt; Evict any key using approximated LRU.</span><br><span class="line">volatile-lfu -&gt; Evict using approximated LFU, only keys with an expire set.</span><br><span class="line">allkeys-lfu -&gt; Evict any key using approximated LFU.</span><br><span class="line">volatile-random -&gt; Remove a random key having an expire set.</span><br><span class="line">allkeys-random -&gt; Remove a random key, any key.</span><br><span class="line">volatile-ttl -&gt; Remove the key with the nearest expire time (minor TTL)</span><br><span class="line">noeviction -&gt; Don&#x27;t evict anything, just return an error on write operations.</span><br></pre></td></tr></table></figure>
+
+<p><code>noeviction</code>是默认模式，不驱逐数据，但不让写入数据了，内存满时再写入会报错。</p>
+<p>这里我们着重了解一下常用的LRU、LFU策略，其实Redis的实现并不是严谨地驱逐最近未使用或最近使用次数最少的键值数据，这样实现会比较复杂（比如LRU需要维护链表，这增加了内存占用与数据移动），而是采用有些随机的算法并支持用户调参来达到近似的结果。</p>
+<h3 id="LRU"><a href="#LRU" class="headerlink" title="LRU"></a>LRU</h3><p>Redis会随机选取5个键，选取最久未使用的键淘汰掉。采样个数是用户可以调整的，默认的5个已经可以达到不错的效果，10个会更接近真实的LRU算法但是更占用CPU资源，3个会更快但是效果更差。</p>
+<h3 id="LFU"><a href="#LFU" class="headerlink" title="LFU"></a>LFU</h3><p>Redis对每一个key维护一个8 bit的计数器，那么最大的使用次数只能表示到255。Redis并不是每次访问都会将计数器加一，基本原则是<strong>访问次数越多，计数器加一的概率越低</strong>。具体的计算方式如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">Given the value of the old counter, when a key is accessed, the counter is incremented in this way:</span><br><span class="line"></span><br><span class="line">1. A random number R between 0 and 1 is extracted.</span><br><span class="line">2. A probability P is calculated as 1/(old_value*lfu_log_factor+1).</span><br><span class="line">3. The counter is incremented only if R &lt; P.</span><br><span class="line"></span><br><span class="line">The default lfu-log-factor is 10. This is a table of how the frequency counter changes with a different number of accesses with different logarithmic factors:</span><br><span class="line"></span><br><span class="line">+--------+------------+------------+------------+------------+------------+</span><br><span class="line">| factor | 100 hits   | 1000 hits  | 100K hits  | 1M hits    | 10M hits   |</span><br><span class="line">+--------+------------+------------+------------+------------+------------+</span><br><span class="line">| 0      | 104        | 255        | 255        | 255        | 255        |</span><br><span class="line">+--------+------------+------------+------------+------------+------------+</span><br><span class="line">| 1      | 18         | 49         | 255        | 255        | 255        |</span><br><span class="line">+--------+------------+------------+------------+------------+------------+</span><br><span class="line">| 10     | 10         | 18         | 142        | 255        | 255        |</span><br><span class="line">+--------+------------+------------+------------+------------+------------+</span><br><span class="line">| 100    | 8          | 11         | 49         | 143        | 255        |</span><br><span class="line">+--------+------------+------------+------------+------------+------------+</span><br></pre></td></tr></table></figure>
+
+<p>如果只是不断向上计数，哪怕我们用64 bit来存储计数最后都会用完，大家都达到最大值时这个算法也就没有意义了，因此我们需要定期地让计数值衰减。Redis默认的衰减时间为一分钟，每次访问键时会判断是否上次更新时间已经过了一分钟，如果是，则根据计数值大小来衰减：</p>
+<ol>
+<li>如果计数值大于10，计数值减半。</li>
+<li>如果计数值小于10，计数值减一。</li>
+</ol>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>无论是将定时任务作为时间事件，从而可以与用户的读写事件一起用单线程版的Reactor模式处理，避免了多线程的锁竞争问题，还是为了减小内存占用与实现复杂度，使用随机采样的算法达到近似LRU和LFU的算法效果，Redis数据淘汰策略的简洁、巧妙与高效都让我受益匪浅。</p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/about/">关于</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E8%BF%87%E6%9C%9F"><span class="toc-number">1.</span> <span class="toc-text">数据过期</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%83%B0%E6%80%A7%E5%88%A0%E9%99%A4"><span class="toc-number">1.1.</span> <span class="toc-text">惰性删除</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9A%E6%97%B6%E5%88%A0%E9%99%A4"><span class="toc-number">1.2.</span> <span class="toc-text">定时删除</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q-A"><span class="toc-number">1.3.</span> <span class="toc-text">Q&amp;A</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E9%99%90%E5%88%B6"><span class="toc-number">2.</span> <span class="toc-text">内存限制</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#LRU"><span class="toc-number">2.1.</span> <span class="toc-text">LRU</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#LFU"><span class="toc-number">2.2.</span> <span class="toc-text">LFU</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">3.</span> <span class="toc-text">总结</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&text=Redis的数据淘汰策略"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&title=Redis的数据淘汰策略"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&is_video=false&description=Redis的数据淘汰策略"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Redis的数据淘汰策略&body=Check out this article: http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&title=Redis的数据淘汰策略"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&title=Redis的数据淘汰策略"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&title=Redis的数据淘汰策略"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&title=Redis的数据淘汰策略"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&name=Redis的数据淘汰策略&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/&t=Redis的数据淘汰策略"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2020-2024
+    seineo
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
