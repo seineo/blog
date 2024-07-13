@@ -6,15 +6,15 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="HandheldFriendly" content="True">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-    <meta name="description" content="P.S. 本文主要参考的是Redis 2.6版本的源码，但也在最后提及了Redis 7.0.3版本达到内存限制时的数据淘汰策略。  Redis有两种情况需要进行数据淘汰：  数据过期：用户可以为每个键设置一个过期时间，当键达到指定的过期时间时，Redis会自动将其删除，以确保数据的及时性和有效性。 内存限制：当Redis的内存使用达到预设的限制时，系统会根据配置的策略进行数据淘汰。这些策略帮">
+    <meta name="description" content="P.S. 本文主要参考的是Redis 2.6版本的源码，但也在最后提及了Redis 7.0.3版本达到内存限制时的数据淘汰策略。  Redis有两种情况需要进行数据淘汰：  数据过期：用户可以为每个键设置一个过期时间，当键达到指定的过期时间时，Redis会自动将其删除，以确保数据的有效性。 内存限制：当Redis的内存使用达到预设的限制时，系统会根据配置的策略进行数据淘汰。这些策略帮助Red">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Redis的数据淘汰策略">
 <meta property="og:url" content="http://example.com/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/index.html">
 <meta property="og:site_name" content="seineo">
-<meta property="og:description" content="P.S. 本文主要参考的是Redis 2.6版本的源码，但也在最后提及了Redis 7.0.3版本达到内存限制时的数据淘汰策略。  Redis有两种情况需要进行数据淘汰：  数据过期：用户可以为每个键设置一个过期时间，当键达到指定的过期时间时，Redis会自动将其删除，以确保数据的及时性和有效性。 内存限制：当Redis的内存使用达到预设的限制时，系统会根据配置的策略进行数据淘汰。这些策略帮">
+<meta property="og:description" content="P.S. 本文主要参考的是Redis 2.6版本的源码，但也在最后提及了Redis 7.0.3版本达到内存限制时的数据淘汰策略。  Redis有两种情况需要进行数据淘汰：  数据过期：用户可以为每个键设置一个过期时间，当键达到指定的过期时间时，Redis会自动将其删除，以确保数据的有效性。 内存限制：当Redis的内存使用达到预设的限制时，系统会根据配置的策略进行数据淘汰。这些策略帮助Red">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2024-07-13T09:08:43.000Z">
-<meta property="article:modified_time" content="2024-07-13T09:57:27.212Z">
+<meta property="article:modified_time" content="2024-07-13T10:03:03.461Z">
 <meta property="article:author" content="seineo">
 <meta name="twitter:card" content="summary">
     
@@ -157,7 +157,7 @@
 </blockquote>
 <p>Redis有两种情况需要进行数据淘汰：</p>
 <ol>
-<li><strong>数据过期</strong>：用户可以为每个键设置一个过期时间，当键达到指定的过期时间时，Redis会自动将其删除，以确保数据的及时性和有效性。</li>
+<li><strong>数据过期</strong>：用户可以为每个键设置一个过期时间，当键达到指定的过期时间时，Redis会自动将其删除，以确保数据的有效性。</li>
 <li><strong>内存限制</strong>：当Redis的内存使用达到预设的限制时，系统会根据配置的策略进行数据淘汰。这些策略帮助Redis在内存有限的情况下，尽可能保留重要数据，同时删除不常使用或过期的数据，保证系统的稳定运行。</li>
 </ol>
 <h2 id="数据过期"><a href="#数据过期" class="headerlink" title="数据过期"></a>数据过期</h2><p>Redis处理过期键是 <strong>惰性删除+定时删除</strong> 的组合，通过结合这两种删除策略，Redis既能在低负载情况下通过惰性删除减少不必要的资源消耗，又能通过定时删除确保过期键不会长期占用内存，从而优化系统的整体性能和内存使用。</p>
