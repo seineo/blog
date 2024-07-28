@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="0-1背包和完全背包是两个基础、常见且非常重要的动态规划问题，本文将简要介绍这两个问题，并探讨回溯-&gt;记忆化搜索-&gt;动态规划 这一系列算法优化的过程。最后，我们将总结解决此类问题的思路。 0-1背包例题我们这里以Leetcode 416. 分割等和子集为例为讨论0-1背包问题的解法，并一步步优化：    给你一个 只包含正整数 的 非空 数组 nums 。请你判断是否可以将这个数组分割">
+<meta property="og:type" content="article">
+<meta property="og:title" content="动态规划：0-1背包与完全背包">
+<meta property="og:url" content="http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/index.html">
+<meta property="og:site_name" content="seineo">
+<meta property="og:description" content="0-1背包和完全背包是两个基础、常见且非常重要的动态规划问题，本文将简要介绍这两个问题，并探讨回溯-&gt;记忆化搜索-&gt;动态规划 这一系列算法优化的过程。最后，我们将总结解决此类问题的思路。 0-1背包例题我们这里以Leetcode 416. 分割等和子集为例为讨论0-1背包问题的解法，并一步步优化：    给你一个 只包含正整数 的 非空 数组 nums 。请你判断是否可以将这个数组分割">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-01-21T13:38:50.000Z">
+<meta property="article:modified_time" content="2024-07-28T10:43:57.114Z">
+<meta property="article:author" content="seineo">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>动态规划：0-1背包与完全背包</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="/2024/03/15/SQL%E8%B8%A9%E5%9D%91%E8%AE%B0%E5%BD%95/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2023/12/16/%E5%9F%BA%E4%BA%8E%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%A7%A3%E5%86%B3%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1%E9%97%AE%E9%A2%98/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&text=动态规划：0-1背包与完全背包"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&title=动态规划：0-1背包与完全背包"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&is_video=false&description=动态规划：0-1背包与完全背包"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=动态规划：0-1背包与完全背包&body=Check out this article: http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&title=动态规划：0-1背包与完全背包"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&title=动态规划：0-1背包与完全背包"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&title=动态规划：0-1背包与完全背包"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&title=动态规划：0-1背包与完全背包"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&name=动态规划：0-1背包与完全背包&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&t=动态规划：0-1背包与完全背包"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#0-1%E8%83%8C%E5%8C%85"><span class="toc-number">1.</span> <span class="toc-text">0-1背包</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BE%8B%E9%A2%98"><span class="toc-number">1.1.</span> <span class="toc-text">例题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E6%B3%95%E4%B8%80%EF%BC%9A%E5%9B%9E%E6%BA%AF"><span class="toc-number">1.2.</span> <span class="toc-text">解法一：回溯</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E6%B3%95%E4%BA%8C%EF%BC%9A%E8%AE%B0%E5%BF%86%E5%8C%96%E6%90%9C%E7%B4%A2"><span class="toc-number">1.3.</span> <span class="toc-text">解法二：记忆化搜索</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E6%B3%95%E4%B8%89%EF%BC%9A%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92"><span class="toc-number">1.4.</span> <span class="toc-text">解法三：动态规划</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%80%9A%E7%94%A8%E6%80%9D%E8%B7%AF"><span class="toc-number">1.5.</span> <span class="toc-text">通用思路</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85"><span class="toc-number">2.</span> <span class="toc-text">完全背包</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BE%8B%E9%A2%98-1"><span class="toc-number">2.1.</span> <span class="toc-text">例题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E6%B3%95%E4%B8%80%EF%BC%9A%E5%9B%9E%E6%BA%AF-1"><span class="toc-number">2.2.</span> <span class="toc-text">解法一：回溯</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E6%B3%95%E4%BA%8C%EF%BC%9A%E8%AE%B0%E5%BF%86%E5%8C%96%E6%90%9C%E7%B4%A2-1"><span class="toc-number">2.3.</span> <span class="toc-text">解法二：记忆化搜索</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E6%B3%95%E4%B8%89%EF%BC%9A%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92-1"><span class="toc-number">2.4.</span> <span class="toc-text">解法三：动态规划</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%80%9A%E7%94%A8%E6%80%9D%E8%B7%AF-1"><span class="toc-number">2.5.</span> <span class="toc-text">通用思路</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        动态规划：0-1背包与完全背包
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">seineo</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2024-01-21T13:38:50.000Z" class="dt-published" itemprop="datePublished">2024-01-21</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <p>0-1背包和完全背包是两个基础、常见且非常重要的动态规划问题，本文将简要介绍这两个问题，并探讨<code>回溯-&gt;记忆化搜索-&gt;动态规划</code> 这一系列算法优化的过程。最后，我们将总结解决此类问题的思路。</p>
+<h2 id="0-1背包"><a href="#0-1背包" class="headerlink" title="0-1背包"></a>0-1背包</h2><h3 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h3><p>我们这里以<a target="_blank" rel="noopener" href="https://leetcode.cn/problems/partition-equal-subset-sum/description/?envType=study-plan-v2&envId=top-100-liked">Leetcode 416. 分割等和子集</a>为例为讨论0-1背包问题的解法，并一步步优化：</p>
+<blockquote>
+<p>  给你一个 <strong>只包含正整数</strong> 的 <strong>非空</strong> 数组 <code>nums</code> 。请你判断是否可以将这个数组分割成两个子集，使得两个子集的元素和相等。</p>
+<p>  <strong>示例 1：</strong></p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">输入：nums = [1,5,11,5]</span><br><span class="line">输出：true</span><br><span class="line">解释：数组可以分割成 [1, 5, 5] 和 [11] 。</span><br></pre></td></tr></table></figure>
+
+<p>  <strong>示例 2：</strong></p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">输入：nums = [1,2,3,5]</span><br><span class="line">输出：false</span><br><span class="line">解释：数组不能分割成两个元素和相等的子集。</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="解法一：回溯"><a href="#解法一：回溯" class="headerlink" title="解法一：回溯"></a>解法一：回溯</h3><p>我们可以将子问题定义为“dfs(i, c) 表示数组 nums 的前 i 个元素中，是否存在子序列和等于 c”。对于当前元素，我们需要分别考虑选择和不选择这两种情况来进行递归搜索：</p>
+<ol>
+<li>选择当前元素 nums[i]：目标和变为 c-nums[i]，即搜索前 i-1 个元素，判断子序列和是否能达到 c-nums[i]，即 dfs(i-1, c-nums[i])。</li>
+<li>不选择当前元素：目标和 c 不变，即搜索前 i-1 个元素，判断子序列和是否能达到 c，即 dfs(i-1, c)。</li>
+</ol>
+<p>因此，递归关系可以表示为：<code>dfs(i, c) = dfs(i-1,c) || dfs(i-1, c-nums[i])</code>，我们可以得到以下代码：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">canPartition</span><span class="params">(nums []<span class="type">int</span>)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">    sum := <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(nums); i++ &#123;</span><br><span class="line">        sum += nums[i]</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> sum % <span class="number">2</span> == <span class="number">1</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">    &#125;</span><br><span class="line">    target := sum / <span class="number">2</span></span><br><span class="line">    <span class="keyword">var</span> dfs <span class="function"><span class="keyword">func</span><span class="params">(i <span class="type">int</span>, target <span class="type">int</span>)</span></span> <span class="type">bool</span> </span><br><span class="line">    dfs = <span class="function"><span class="keyword">func</span> <span class="params">(i <span class="type">int</span>, target <span class="type">int</span>)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> i &lt; <span class="number">0</span> || target &lt; <span class="number">0</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> i == <span class="number">0</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> nums[<span class="number">0</span>] == target</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> dfs(i<span class="number">-1</span>, target) || dfs(i<span class="number">-1</span>, target-nums[i])</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> dfs(<span class="built_in">len</span>(nums)<span class="number">-1</span>, target)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="解法二：记忆化搜索"><a href="#解法二：记忆化搜索" class="headerlink" title="解法二：记忆化搜索"></a>解法二：记忆化搜索</h3><p>回溯有着不少重复的搜索，为了降低时间复杂度，我们可以空间换时间，将搜索结果缓存起来备用：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">canPartition</span><span class="params">(nums []<span class="type">int</span>)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">    sum := <span class="number">0</span></span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(nums); i++ &#123;</span><br><span class="line">        sum += nums[i]</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> sum % <span class="number">2</span> == <span class="number">1</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">    &#125;</span><br><span class="line">    target := sum / <span class="number">2</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 记忆化</span></span><br><span class="line">    memo := <span class="built_in">make</span>([][]<span class="type">bool</span>, <span class="built_in">len</span>(nums))</span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(memo); i++ &#123;</span><br><span class="line">        memo[i] = <span class="built_in">make</span>([]<span class="type">bool</span>, target+<span class="number">1</span>)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> dfs <span class="function"><span class="keyword">func</span><span class="params">(i <span class="type">int</span>, target <span class="type">int</span>)</span></span> <span class="type">bool</span> </span><br><span class="line">    dfs = <span class="function"><span class="keyword">func</span> <span class="params">(i <span class="type">int</span>, target <span class="type">int</span>)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">		<span class="keyword">if</span> i &lt; <span class="number">0</span> || target &lt; <span class="number">0</span> &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">		&#125;</span><br><span class="line">        <span class="keyword">if</span> i == <span class="number">0</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> nums[<span class="number">0</span>] == target</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> memo[i][target] &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">        &#125;</span><br><span class="line">        result := dfs(i<span class="number">-1</span>, target) || dfs(i<span class="number">-1</span>, target-nums[i])</span><br><span class="line">        <span class="keyword">if</span> result &#123;</span><br><span class="line">            memo[i][target] = <span class="literal">true</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> dfs(<span class="built_in">len</span>(nums)<span class="number">-1</span>, target)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="解法三：动态规划"><a href="#解法三：动态规划" class="headerlink" title="解法三：动态规划"></a>解法三：动态规划</h3><p>将dfs函数转为状态数组，将递归转为循环，记忆化搜索就可以转化为动态规划：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">canPartition</span><span class="params">(nums []<span class="type">int</span>)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">	sum := <span class="number">0</span></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(nums); i++ &#123;</span><br><span class="line">		sum += nums[i]</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> sum%<span class="number">2</span> == <span class="number">1</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">	target := sum / <span class="number">2</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// dp[i][target] = dpp[i-1][target] || dp[]i-1][target-nums[i]]</span></span><br><span class="line">	dp := <span class="built_in">make</span>([][]<span class="type">bool</span>, <span class="built_in">len</span>(nums)+<span class="number">1</span>)</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(dp); i++ &#123;</span><br><span class="line">		dp[i] = <span class="built_in">make</span>([]<span class="type">bool</span>, target+<span class="number">1</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// dp[0][i]为false, dp[i][0]为true</span></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(dp); i++ &#123;</span><br><span class="line">		dp[i][<span class="number">0</span>] = <span class="literal">true</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">1</span>; i &lt; <span class="built_in">len</span>(dp); i++ &#123;</span><br><span class="line">		<span class="keyword">for</span> j := <span class="number">0</span>; j &lt;= target; j++ &#123;</span><br><span class="line">			dp[i][j] = dp[i<span class="number">-1</span>][j]</span><br><span class="line">			<span class="keyword">if</span> j &gt;= nums[i<span class="number">-1</span>] &#123;</span><br><span class="line">				dp[i][j] = dp[i][j] || dp[i<span class="number">-1</span>][j-nums[i<span class="number">-1</span>]]</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> dp[<span class="built_in">len</span>(nums)][target]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看到这一解法的时空复杂度都为O(N^2)，由于i层的状态仅仅依赖i-1层的状态，我们可以进行空间的优化。常见的优化方式有两种：</p>
+<ol>
+<li><p>奇偶数组。</p>
+<p>由于当前行状态仅依赖于上一行的状态，因此可以仅仅用两层状态数组：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">canPartition</span><span class="params">(nums []<span class="type">int</span>)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">	sum := <span class="number">0</span></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(nums); i++ &#123;</span><br><span class="line">		sum += nums[i]</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> sum%<span class="number">2</span> == <span class="number">1</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">	target := sum / <span class="number">2</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// dp[i][target] = dpp[i-1][target] || dp[]i-1][target-nums[i]]</span></span><br><span class="line">	dp := <span class="built_in">make</span>([][]<span class="type">bool</span>, <span class="number">2</span>)</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(dp); i++ &#123;</span><br><span class="line">		dp[i] = <span class="built_in">make</span>([]<span class="type">bool</span>, target+<span class="number">1</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// dp[0][i]为false, dp[i][0]为true</span></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(dp); i++ &#123;</span><br><span class="line">		dp[i][<span class="number">0</span>] = <span class="literal">true</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">1</span>; i &lt;= <span class="built_in">len</span>(nums); i++ &#123;</span><br><span class="line">		<span class="keyword">for</span> j := <span class="number">0</span>; j &lt;= target; j++ &#123;</span><br><span class="line">			dp[i % <span class="number">2</span>][j] = dp[(i<span class="number">-1</span>)%<span class="number">2</span>][j]</span><br><span class="line">			<span class="keyword">if</span> j &gt;= nums[i<span class="number">-1</span>] &#123;</span><br><span class="line">				dp[i % <span class="number">2</span>][j] = dp[i % <span class="number">2</span>][j] || dp[(i<span class="number">-1</span>)%<span class="number">2</span>][j-nums[i<span class="number">-1</span>]]</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> dp[<span class="built_in">len</span>(nums) % <span class="number">2</span>][target]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>反向遍历。</p>
+<p>得到状态转移方程后我们能够比较顺利地写出上述代码，奇偶数组优化利用了两个一维数组。之所以使用两个，是因为在每层从前往后遍历时，会覆盖前一层对应下标的值。实际上，我们可以进一步优化，从后往前遍历进行更新，这样就不存在覆盖问题，从而只需使用一个一维数组即可：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">canPartition</span><span class="params">(nums []<span class="type">int</span>)</span></span> <span class="type">bool</span> &#123;</span><br><span class="line">	sum := <span class="number">0</span></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(nums); i++ &#123;</span><br><span class="line">		sum += nums[i]</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> sum%<span class="number">2</span> == <span class="number">1</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">	target := sum / <span class="number">2</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// dp[i][target] = dp(i-1, target) || dp(i-1, target-nums[i])</span></span><br><span class="line">	dp := <span class="built_in">make</span>([]<span class="type">bool</span>, target+<span class="number">1</span>)</span><br><span class="line">    dp[<span class="number">0</span>] = <span class="literal">true</span></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">1</span>; i &lt;= <span class="built_in">len</span>(nums); i++ &#123;</span><br><span class="line">		<span class="keyword">for</span> j := target; j &gt;= <span class="number">0</span>; j-- &#123;</span><br><span class="line">			<span class="keyword">if</span> j &gt;= nums[i<span class="number">-1</span>] &#123;</span><br><span class="line">				dp[j] = dp[j] || dp[j-nums[i<span class="number">-1</span>]]</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> dp[target]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="通用思路"><a href="#通用思路" class="headerlink" title="通用思路"></a>通用思路</h3><p>如果一个问题可以转化为选择或不选择，并且目标是求解最优值、方案数或判断是否可行等满足无后效性的问题，那么这就是一个背包问题。如果元素只能选择一次，则是0-1背包问题。因此，上述例题“给定一个数组，判断是否存在子序列的和等于目标数”本质上就是一个0-1背包问题。</p>
+<p>接下来我们介绍一下什么是0-1背包问题，以及通用的解题公式，基于解题公式，可以写出以上三种解法。</p>
+<p><strong>0-1背包问题</strong>：有n个物品以及一个容量为c的背包，第i个物品的重量为w[i]，价值为v[i]，<strong>每个物品最多选一次</strong>，求重量和不超过c时的最大价值和？</p>
+<p><strong>解题公式</strong>：<code>dfs(i, c) = max(dfs(i-1, c), dfs(i-1,  c-w[i])+v[i])</code></p>
+<h2 id="完全背包"><a href="#完全背包" class="headerlink" title="完全背包"></a>完全背包</h2><h3 id="例题-1"><a href="#例题-1" class="headerlink" title="例题"></a>例题</h3><p>我们这里以<a target="_blank" rel="noopener" href="https://leetcode.cn/problems/coin-change/description/?envType=study-plan-v2&envId=top-100-liked">Leetcode 322. 零钱兑换</a>为例为讨论完全背包问题的解法，并一步步优化：</p>
+<blockquote>
+<p>  给你一个整数数组 <code>coins</code> ，表示不同面额的硬币；以及一个整数 <code>amount</code> ，表示总金额。</p>
+<p>  计算并返回可以凑成总金额所需的 <strong>最少的硬币个数</strong> 。如果没有任何一种硬币组合能组成总金额，返回 <code>-1</code> 。</p>
+<p>  你可以认为每种硬币的数量是无限的。</p>
+<p>  <strong>示例 1：</strong></p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">输入：coins = [1, 2, 5], amount = 11</span><br><span class="line">输出：3 </span><br><span class="line">解释：11 = 5 + 5 + 1</span><br></pre></td></tr></table></figure>
+
+<p>  <strong>示例 2：</strong></p>
+  <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：coins = [2], amount = 3</span><br><span class="line">输出：-1</span><br></pre></td></tr></table></figure>
+</blockquote>
+<h3 id="解法一：回溯-1"><a href="#解法一：回溯-1" class="headerlink" title="解法一：回溯"></a>解法一：回溯</h3><p>我们可以将子问题定义为“dfs(amount) &#x3D; 使用给定的硬币种类，使面值总和等于 amount 的最小硬币数”。对于当前金额，我们需要根据不同的硬币面值，选择能够得到目标值的最小硬币数。</p>
+<p>显然，可以得到如下递归关系：<code>dfs(amount) = min(dfs(amount-coins[j])) + 1, 0 &lt;= j &lt; len(coins)</code>，我们可以写出如下代码：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">coinChange</span><span class="params">(coins []<span class="type">int</span>, amount <span class="type">int</span>)</span></span> <span class="type">int</span> &#123;</span><br><span class="line">    <span class="keyword">var</span> dfs <span class="function"><span class="keyword">func</span><span class="params">(amount <span class="type">int</span>)</span></span> <span class="type">int</span></span><br><span class="line">    dfs = <span class="function"><span class="keyword">func</span><span class="params">(amount <span class="type">int</span>)</span></span> <span class="type">int</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> amount &lt;= <span class="number">0</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">        &#125;</span><br><span class="line">        result := math.MaxInt</span><br><span class="line">        <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(coins); i++ &#123;</span><br><span class="line">            <span class="keyword">if</span> amount &gt;= coins[i] &#123;</span><br><span class="line">                cur := dfs(amount-coins[i])</span><br><span class="line">                <span class="keyword">if</span> cur == math.MaxInt &#123;</span><br><span class="line">                    <span class="keyword">continue</span></span><br><span class="line">                &#125;</span><br><span class="line">                result = min(result, cur+<span class="number">1</span>)</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result</span><br><span class="line">    &#125;</span><br><span class="line">    result := dfs(amount)</span><br><span class="line">    <span class="keyword">if</span> result == math.MaxInt &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> result</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="解法二：记忆化搜索-1"><a href="#解法二：记忆化搜索-1" class="headerlink" title="解法二：记忆化搜索"></a>解法二：记忆化搜索</h3><p>使用map缓存下已计算出的总和对应的最小硬币数：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">coinChange</span><span class="params">(coins []<span class="type">int</span>, amount <span class="type">int</span>)</span></span> <span class="type">int</span> &#123;</span><br><span class="line">    <span class="comment">// 记忆化搜索</span></span><br><span class="line">    memo := <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="type">int</span>]<span class="type">int</span>)</span><br><span class="line">    <span class="keyword">var</span> dfs <span class="function"><span class="keyword">func</span><span class="params">(amount <span class="type">int</span>)</span></span> <span class="type">int</span></span><br><span class="line">    dfs = <span class="function"><span class="keyword">func</span><span class="params">(amount <span class="type">int</span>)</span></span> <span class="type">int</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> amount &lt;= <span class="number">0</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">        &#125;</span><br><span class="line">        cnt, exists := memo[amount]</span><br><span class="line">        <span class="keyword">if</span> exists &#123;</span><br><span class="line">            <span class="keyword">return</span> cnt</span><br><span class="line">        &#125;</span><br><span class="line">        result := math.MaxInt</span><br><span class="line">        <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(coins); i++ &#123;</span><br><span class="line">            <span class="keyword">if</span> amount &gt;= coins[i] &#123;</span><br><span class="line">                cur := dfs(amount-coins[i])</span><br><span class="line">                <span class="keyword">if</span> cur == math.MaxInt &#123;</span><br><span class="line">                    <span class="keyword">continue</span></span><br><span class="line">                &#125;</span><br><span class="line">                result = min(result, cur+<span class="number">1</span>)</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> result &lt; math.MaxInt &#123;</span><br><span class="line">            memo[amount] = result</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result</span><br><span class="line">    &#125;</span><br><span class="line">    result := dfs(amount)</span><br><span class="line">    <span class="keyword">if</span> result == math.MaxInt &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> result</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="解法三：动态规划-1"><a href="#解法三：动态规划-1" class="headerlink" title="解法三：动态规划"></a>解法三：动态规划</h3><p>类似地，将记忆化搜索转写为自底向上的动态规划：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">coinChange</span><span class="params">(coins []<span class="type">int</span>, amount <span class="type">int</span>)</span></span> <span class="type">int</span> &#123;</span><br><span class="line">    <span class="comment">// dp[i]为总和为i的最小硬币数目</span></span><br><span class="line">    <span class="comment">// dp[i] = min(dp[i-coins[j]]) + 1</span></span><br><span class="line">    dp := <span class="built_in">make</span>([]<span class="type">int</span>, amount+<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(dp); i++ &#123;</span><br><span class="line">        dp[i] = math.MaxInt</span><br><span class="line">    &#125;</span><br><span class="line">    dp[<span class="number">0</span>] = <span class="number">0</span> </span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">1</span>; i &lt; <span class="built_in">len</span>(dp); i++ &#123;</span><br><span class="line">        <span class="keyword">for</span> j := <span class="number">0</span>; j &lt; <span class="built_in">len</span>(coins); j++ &#123;</span><br><span class="line">            <span class="keyword">if</span> i &gt;= coins[j] &amp;&amp; dp[i-coins[j]] &lt; math.MaxInt &#123;</span><br><span class="line">                dp[i] = min(dp[i], dp[i-coins[j]]+<span class="number">1</span>)</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> dp[amount] &lt; math.MaxInt &#123;</span><br><span class="line">        <span class="keyword">return</span> dp[amount]</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="通用思路-1"><a href="#通用思路-1" class="headerlink" title="通用思路"></a>通用思路</h3><p>了解了0-1背包后，学习完全背包就没什么难度了，下面直接介绍下问题定义和解题公式。</p>
+<p><strong>完全背包问题</strong>：有n个物品以及一个容量为c的背包，第i个物品的重量为w[i]，价值为v[i]，<strong>每个物品可以无限次重复选</strong>，求重量和不超过c时的最大价值和？</p>
+<p><strong>解题公式</strong>：<code>dfs(i, c) = max(dfs(i-1, c), dfs(i, c-w[i])+v[i])</code></p>
+<p><strong>完全背包与0-1背包的唯一不同点在于：假定当前为第 i 个物品，如果选择当前物品，完全背包会计算前 i 个物品在重量和为 c-w[i] 时的最大价值，因为我们仍然可以选择第 i 个物品；而0-1背包则会计算前 i-1 个物品在重量和为 c-w[i] 时的最大价值，因为每个物品只能选择一次。</strong></p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/about/">关于</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#0-1%E8%83%8C%E5%8C%85"><span class="toc-number">1.</span> <span class="toc-text">0-1背包</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BE%8B%E9%A2%98"><span class="toc-number">1.1.</span> <span class="toc-text">例题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E6%B3%95%E4%B8%80%EF%BC%9A%E5%9B%9E%E6%BA%AF"><span class="toc-number">1.2.</span> <span class="toc-text">解法一：回溯</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E6%B3%95%E4%BA%8C%EF%BC%9A%E8%AE%B0%E5%BF%86%E5%8C%96%E6%90%9C%E7%B4%A2"><span class="toc-number">1.3.</span> <span class="toc-text">解法二：记忆化搜索</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E6%B3%95%E4%B8%89%EF%BC%9A%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92"><span class="toc-number">1.4.</span> <span class="toc-text">解法三：动态规划</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%80%9A%E7%94%A8%E6%80%9D%E8%B7%AF"><span class="toc-number">1.5.</span> <span class="toc-text">通用思路</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85"><span class="toc-number">2.</span> <span class="toc-text">完全背包</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BE%8B%E9%A2%98-1"><span class="toc-number">2.1.</span> <span class="toc-text">例题</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E6%B3%95%E4%B8%80%EF%BC%9A%E5%9B%9E%E6%BA%AF-1"><span class="toc-number">2.2.</span> <span class="toc-text">解法一：回溯</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E6%B3%95%E4%BA%8C%EF%BC%9A%E8%AE%B0%E5%BF%86%E5%8C%96%E6%90%9C%E7%B4%A2-1"><span class="toc-number">2.3.</span> <span class="toc-text">解法二：记忆化搜索</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E6%B3%95%E4%B8%89%EF%BC%9A%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92-1"><span class="toc-number">2.4.</span> <span class="toc-text">解法三：动态规划</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%80%9A%E7%94%A8%E6%80%9D%E8%B7%AF-1"><span class="toc-number">2.5.</span> <span class="toc-text">通用思路</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&text=动态规划：0-1背包与完全背包"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&title=动态规划：0-1背包与完全背包"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&is_video=false&description=动态规划：0-1背包与完全背包"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=动态规划：0-1背包与完全背包&body=Check out this article: http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&title=动态规划：0-1背包与完全背包"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&title=动态规划：0-1背包与完全背包"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&title=动态规划：0-1背包与完全背包"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&title=动态规划：0-1背包与完全背包"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&name=动态规划：0-1背包与完全背包&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/01/21/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%9A0-1%E8%83%8C%E5%8C%85%E4%B8%8E%E5%AE%8C%E5%85%A8%E8%83%8C%E5%8C%85/&t=动态规划：0-1背包与完全背包"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2020-2024
+    seineo
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
