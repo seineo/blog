@@ -16,7 +16,7 @@ i/o硬件：port、bus、controller
 
 <img src="https://oss.seineo.cn/images/202407092359344.png" alt="截屏2024-07-09 23.59.00" style="zoom:50%;" />
 
-北桥芯片处理高速设备，如显卡、内存；南桥芯片处理相对低俗的设备，如常见的I/O设备。
+北桥芯片处理高速设备，如显卡、内存；南桥芯片处理相对低速的设备，如常见的I/O设备。
 
 ## 内核态视角
 
@@ -31,10 +31,10 @@ I/O操作从不同维度有不同的分类：
     -   Memory-mapped I/O：适合大数据量，写到指定物理地址，占用了内存空间。
 -   如何与设备交互：
     -   Busy-waiting：基本消失了。
-    -   Interrupt
+    -   Interrupt：处理器不用忙等待，I/O完成后会中断通知。
 -   数据传输的控制方：
-    -   CPU
-    -   DMA
+    -   CPU：
+    -   DMA：
 
 
 

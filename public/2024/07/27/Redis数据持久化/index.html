@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="Redis是一款基于内存存储的键值数据库，那么默认情况下，当Redis服务器重启或者宕机后数据就会丢失。在大多业务场景下，我们都不希望数据丢失，因此Redis提供了数据库持久化的特性，允许数据存储到磁盘以应对服务器宕机或重启的情况。 Redis有两种持久化方案：  AOF（Append Only File）：将每一条写操作追加到日志文件中。 RDB（Redis Database）：定期生成数据的快">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis数据持久化">
+<meta property="og:url" content="http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/index.html">
+<meta property="og:site_name" content="seineo">
+<meta property="og:description" content="Redis是一款基于内存存储的键值数据库，那么默认情况下，当Redis服务器重启或者宕机后数据就会丢失。在大多业务场景下，我们都不希望数据丢失，因此Redis提供了数据库持久化的特性，允许数据存储到磁盘以应对服务器宕机或重启的情况。 Redis有两种持久化方案：  AOF（Append Only File）：将每一条写操作追加到日志文件中。 RDB（Redis Database）：定期生成数据的快">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://oss.seineo.cn/images/whiteboard_exported_image%20(1).png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202408042351057.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202408042355277.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202408042354269.png">
+<meta property="article:published_time" content="2024-07-27T13:25:10.000Z">
+<meta property="article:modified_time" content="2024-08-25T09:59:36.802Z">
+<meta property="article:author" content="seineo">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://oss.seineo.cn/images/whiteboard_exported_image%20(1).png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Redis数据持久化</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2024/07/13/Redis%E7%9A%84%E6%95%B0%E6%8D%AE%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&text=Redis数据持久化"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&title=Redis数据持久化"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&is_video=false&description=Redis数据持久化"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Redis数据持久化&body=Check out this article: http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&title=Redis数据持久化"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&title=Redis数据持久化"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&title=Redis数据持久化"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&title=Redis数据持久化"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&name=Redis数据持久化&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&t=Redis数据持久化"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%A2%84%E5%A4%87%E7%9F%A5%E8%AF%86"><span class="toc-number">1.</span> <span class="toc-text">预备知识</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#AOF%E5%AE%9E%E7%8E%B0"><span class="toc-number">2.</span> <span class="toc-text">AOF实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%91%BD%E4%BB%A4%E6%B7%BB%E5%8A%A0%E5%88%B0AOF"><span class="toc-number">2.1.</span> <span class="toc-text">命令添加到AOF</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B7%BB%E5%8A%A0%E5%88%B0%E7%BC%93%E5%AD%98"><span class="toc-number">2.1.1.</span> <span class="toc-text">添加到缓存</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%93%E5%AD%98%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-number">2.1.2.</span> <span class="toc-text">缓存的实现</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%B7%E6%96%B0%E5%88%B0%E7%A3%81%E7%9B%98"><span class="toc-number">2.1.3.</span> <span class="toc-text">刷新到磁盘</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#AOF%E5%8A%A0%E8%BD%BD"><span class="toc-number">2.2.</span> <span class="toc-text">AOF加载</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#AOF%E9%87%8D%E5%86%99%E6%B5%81%E7%A8%8B"><span class="toc-number">2.3.</span> <span class="toc-text">AOF重写流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A1%E6%A3%80%E4%BB%BB%E5%8A%A1"><span class="toc-number">2.4.</span> <span class="toc-text">巡检任务</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#AOF-vs-RDB"><span class="toc-number">3.</span> <span class="toc-text">AOF vs RDB</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        Redis数据持久化
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">seineo</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2024-07-27T13:25:10.000Z" class="dt-published" itemprop="datePublished">2024-07-27</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <p>Redis是一款基于内存存储的键值数据库，那么默认情况下，当Redis服务器重启或者宕机后数据就会丢失。在大多业务场景下，我们都不希望数据丢失，因此Redis提供了数据库持久化的特性，允许数据存储到磁盘以应对服务器宕机或重启的情况。</p>
+<p>Redis有两种持久化方案：</p>
+<ul>
+<li>AOF（Append Only File）：将每一条写操作追加到日志文件中。</li>
+<li>RDB（Redis Database）：定期生成数据的快照并持久化到磁盘中。</li>
+</ul>
+<p>接下来会结合Redis 2.6版本源码来学习Redis是如何实现数据持久化的，这两个方案留存至今，只不过实现细节会有所变化。<strong>AOF与RDB的大致流程相似，因此本文主要会分析AOF的实现流程</strong>，并在最后讨论AOF与RDB两种方案的区别以及如何选择。</p>
+<h2 id="预备知识"><a href="#预备知识" class="headerlink" title="预备知识"></a>预备知识</h2><p>Redis关于持久化的实现中涉及了大量数据写入文件的优化，这涉及了write、fwrite、fflush、fsync等函数，这里先简要介绍下，了解了这些才能更好地理解为什么Redis要这么做。</p>
+<img src="https://oss.seineo.cn/images/whiteboard_exported_image (1).png" alt="whiteboard_exported_image" style="zoom:50%;" />
+
+<p>如上图所示，在一次写操作中可能涉及多个缓冲区。</p>
+<ul>
+<li>fwrite是C语言提供的库函数，将数据从程序的缓冲区写到C语言库的缓冲区，最后需要调用fflush函数刷新到内核的缓冲区。</li>
+<li>write是系统调用，直接从程序缓冲区写入到内核的缓冲区。这样看write似乎性能更好，但是write并没有缓冲区的概念，他是直接将参数指定的长度写入内核，对于未知数据长度时，会涉及多次的系统调用。</li>
+<li>以上两个函数都不是将数据直接写到磁盘，最后都需要使用fsync系统调用将内核缓冲区的数据刷新到磁盘上。</li>
+</ul>
+<h2 id="AOF实现"><a href="#AOF实现" class="headerlink" title="AOF实现"></a>AOF实现</h2><h3 id="命令添加到AOF"><a href="#命令添加到AOF" class="headerlink" title="命令添加到AOF"></a>命令添加到AOF</h3><h4 id="添加到缓存"><a href="#添加到缓存" class="headerlink" title="添加到缓存"></a>添加到缓存</h4><p>由于磁盘I&#x2F;O缓慢，因此Redis并不是直接将命令写入AOF文件，而是先写入缓存，而后缓存根据配置的策略定期刷入AOF文件中。这一过程由<code>feedAppendOnlyFile</code>函数完成：</p>
+<img src="https://oss.seineo.cn/images/202408042351057.png" alt="截屏2024-08-04 23.51.55" style="zoom:50%;" />
+
+<p>如上图所示，AOF打开时，执行的更新命令会写入AOF缓存，如果AOF在重写，那么还需要写入AOF的重写缓存。这里需要区分<strong>AOF缓存</strong>与<strong>AOF重写缓存</strong>，AOF缓存每次写操作都会触发，根据配置决定何时同步到磁盘。而AOF重写缓存仅在 AOF 重写进行时写入，防止重写期间的数据丢失，在AOF重写完成后刷新到磁盘。</p>
+<h4 id="缓存的实现"><a href="#缓存的实现" class="headerlink" title="缓存的实现"></a>缓存的实现</h4><p>这里的缓存也很值得研究，缓存是一个双链表，每个节点会对应一块连续的内存区域，每次追加命令到缓存，会先找到最后一个节点，尝试追加到对应内存区域，如果不够空间，则将该节点的空间用满，然后创建新节点来追加，直到所有命令都存入缓存为止。代码很优雅，这里直接贴上来：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">aofRewriteBufferAppend</span><span class="params">(<span class="type">unsigned</span> <span class="type">char</span> *s, <span class="type">unsigned</span> <span class="type">long</span> len)</span> &#123;</span><br><span class="line">    listNode *ln = listLast(server.aof_rewrite_buf_blocks);</span><br><span class="line">    aofrwblock *block = ln ? ln-&gt;value : <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(len) &#123;</span><br><span class="line">        <span class="comment">/* If we already got at least an allocated block, try appending</span></span><br><span class="line"><span class="comment">         * at least some piece into it. */</span></span><br><span class="line">        <span class="comment">// 将数据保存到最后一个块里</span></span><br><span class="line">        <span class="comment">// 数据保存的数量是不定的，可能需要创建一个新块来保存数据</span></span><br><span class="line">        <span class="keyword">if</span> (block) &#123;</span><br><span class="line">            <span class="type">unsigned</span> <span class="type">long</span> thislen = (block-&gt;<span class="built_in">free</span> &lt; len) ? block-&gt;<span class="built_in">free</span> : len;</span><br><span class="line">            <span class="keyword">if</span> (thislen) &#123;  <span class="comment">/* The current block is not already full. */</span></span><br><span class="line">                <span class="built_in">memcpy</span>(block-&gt;buf+block-&gt;used, s, thislen);</span><br><span class="line">                block-&gt;used += thislen;</span><br><span class="line">                block-&gt;<span class="built_in">free</span> -= thislen;</span><br><span class="line">                s += thislen;</span><br><span class="line">                len -= thislen;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 分配第一个块，</span></span><br><span class="line">        <span class="comment">// 或者创建另一个块来保存数据</span></span><br><span class="line">        <span class="keyword">if</span> (len) &#123; <span class="comment">/* First block to allocate, or need another block. */</span></span><br><span class="line">            <span class="type">int</span> numblocks;</span><br><span class="line"></span><br><span class="line">            block = zmalloc(<span class="keyword">sizeof</span>(*block));</span><br><span class="line">            block-&gt;<span class="built_in">free</span> = AOF_RW_BUF_BLOCK_SIZE;</span><br><span class="line">            block-&gt;used = <span class="number">0</span>;</span><br><span class="line">            listAddNodeTail(server.aof_rewrite_buf_blocks,block);</span><br><span class="line"></span><br><span class="line">            <span class="comment">/* Log every time we cross more 10 or 100 blocks, respectively</span></span><br><span class="line"><span class="comment">             * as a notice or warning. */</span></span><br><span class="line">            numblocks = listLength(server.aof_rewrite_buf_blocks);</span><br><span class="line">            <span class="keyword">if</span> (((numblocks+<span class="number">1</span>) % <span class="number">10</span>) == <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="type">int</span> level = ((numblocks+<span class="number">1</span>) % <span class="number">100</span>) == <span class="number">0</span> ? REDIS_WARNING :</span><br><span class="line">                                                         REDIS_NOTICE;</span><br><span class="line">                redisLog(level,<span class="string">&quot;Background AOF buffer size: %lu MB&quot;</span>,</span><br><span class="line">                    aofRewriteBufferSize()/(<span class="number">1024</span>*<span class="number">1024</span>));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="刷新到磁盘"><a href="#刷新到磁盘" class="headerlink" title="刷新到磁盘"></a>刷新到磁盘</h4><p>缓存写入AOF文件是通过<code>flushAppendOnlyFile</code>函数完成的：Redis会先查看后台线程在排队等待fsync的数量，<strong>如果AOF的同步策略是每秒一次且不强制现在同步，那么Redis会尝试推迟同步刷新数据到磁盘，这时因为如果有fsync在运行，则是要将内核缓冲区数据刷新到磁盘，那么我们再调用write系统调用，想写入内核缓冲区，write就会被后台的fsync阻塞住，从而阻塞了单线程Redis的正常运行。</strong>推迟刷新的尝试如下：</p>
+<ol>
+<li><p>是否排队等待fsync的线程数量不为0？</p>
+</li>
+<li><p>如果是，之前是否推迟过？如果没有，记录开始推迟的时间；否则看看上一次推迟是什么时间，如果在两秒内，那我们能接受，继续推迟，否则说明磁盘太忙碌了但我们还是必须得同步了（因为设置的每秒同步刷新一次）。</p>
+</li>
+</ol>
+<p>能推迟则直接返回，否则必须同步了，通过write系统调用将AOF缓存写入AOF文件，如果中途失败：</p>
+<ul>
+<li>一个字节都没写入，那么直接输出错误日志后，退出程序。</li>
+<li>写入了一些，但没写完，那么我们将文件截断（ftruncate函数）至写入缓存之前的大小（回滚），再退出程序。</li>
+</ul>
+<p>如果所有字节全部成功写入，那么我们更新AOF文件的当前大小，如果缓存不大，则清空内容用于下次复用，否则释放缓存的所有内存。最后，有需要的话我们执行fsync：</p>
+<ul>
+<li>如果后台子进程正在重写AOF，那么不执行fsync；</li>
+<li>否则，如果fsync配置是always，那么必须执行fsync；</li>
+<li>如果fsync配置是every second并且现在距离上次fsync已经超过一秒了，那么在没有fsync在后台执行时，后台执行fsync。</li>
+</ul>
+<p>后台执行任务也是一个有趣的话题，在Redis中后台执行交给bio（background i&#x2F;o service）来处理。在Redis 2.6中，后台任务只有两种类型：<strong>关闭文件</strong>与<strong>AOF的fsync操作</strong>。 Redis用一个结构体表示要执行的工作，而每个类型的工作有一个队列和线程，每个线程都顺序地处理它所对应类型工作队列中的工作。由于存在多线程操作任务队列的情况，因此会使用锁、条件变量来保证工作执行的唯一性。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">bio_job</span> &#123;</span></span><br><span class="line">    <span class="comment">// 任务创建时的时间</span></span><br><span class="line">    <span class="type">time_t</span> time; <span class="comment">/* Time at which the job was created. */</span></span><br><span class="line">    <span class="comment">// 任务的参数，如果需要多于三个时，可以传递数组或者结构</span></span><br><span class="line">    <span class="comment">/* Job specific arguments pointers. If we need to pass more than three</span></span><br><span class="line"><span class="comment">     * arguments we can just pass a pointer to a structure or alike. */</span></span><br><span class="line">    <span class="type">void</span> *arg1, *arg2, *arg3;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 工作线程</span></span><br><span class="line"><span class="type">static</span> <span class="type">pthread_t</span> bio_threads[REDIS_BIO_NUM_OPS];</span><br><span class="line"><span class="type">static</span> <span class="type">pthread_mutex_t</span> bio_mutex[REDIS_BIO_NUM_OPS];</span><br><span class="line"><span class="type">static</span> <span class="type">pthread_cond_t</span> bio_condvar[REDIS_BIO_NUM_OPS];</span><br><span class="line"><span class="comment">// 存放工作的队列</span></span><br><span class="line"><span class="type">static</span> <span class="built_in">list</span> *bio_jobs[REDIS_BIO_NUM_OPS];</span><br></pre></td></tr></table></figure>
+
+<p>创建任务：将任务加到队列末尾，然后排队的任务数目递增，广播这一条件，表明这个类型来工作了。</p>
+<p>处理工作：不断读取工作队列的第一个节点来处理工作，如果没有节点则通过条件变量阻塞，当有节点时被唤醒。</p>
+<h3 id="AOF加载"><a href="#AOF加载" class="headerlink" title="AOF加载"></a>AOF加载</h3><p>AOF加载会调用<code>loadAppendOnlyFile</code>函数来重放AOF。具体而言，Redis读取AOF文件，关闭AOF开关（避免同时读写文件），然后构建一个伪终端，不断地一行行读取命令，解析命令给伪终端执行。 由于这可能是一个长IO的任务，期间还是要定期花时间处理请求，Redis会每1000次循环处理一次外部的读写请求。</p>
+<h3 id="AOF重写流程"><a href="#AOF重写流程" class="headerlink" title="AOF重写流程"></a>AOF重写流程</h3><p>AOF文件文件过大时加载数据会比较缓慢，因此Redis实现了AOF文件的重写，实现在<code>rewriteAppendOnlyFileBackground</code>函数：</p>
+<img src="https://oss.seineo.cn/images/202408042355277.png" alt="image-20240804235504239" style="zoom: 15%;" />
+
+<p><code>rewriteAppendOnlyFileBackground</code>函数会fork一个子进程，在子进程中调用<code>rewriteAppendOnlyFile</code>函数重写命令到临时的AOF文件（temp-rewriteaof-bg-{pid}.aof）中，父进程负责处理错误，如果创建子进程成功则更新服务器关于AOF的状态（如aof_child_pid，不为-1说明后台正在执行aof）。</p>
+<img src="https://oss.seineo.cn/images/202408042354269.png" alt="截屏2024-08-04 23.54.07" style="zoom:50%;" />
+
+<p><code>rewriteAppendOnlyFile</code>函数会尝试将每个数据库的键值SET命令保存在自己的临时文件中（temp-rewriteaof-{pid}.aof）。全部成功写完后，fflush刷新用户缓冲区写到内核缓冲区，fsync刷新内核缓冲区确保数据都写入了文件，最后将重写后的 AOF 文件（这里是temp-rewriteaof-{pid}.aof）重命名覆盖旧 AOF 文件（这里是temp-rewriteaof-bg-{pid}.aof）。 如果写入AOF文件过程中有错误，则直接删除临时文件。</p>
+<h3 id="巡检任务"><a href="#巡检任务" class="headerlink" title="巡检任务"></a>巡检任务</h3><p>Redis会有一些巡检任务，根据服务的状态开启AOF的重写或刷新AOF缓存：</p>
+<ol>
+<li>检查用户是否执行了BGREWRITEAOF命令，有则执行<code>rewriteAppendOnlyFileBackground</code>函数在后台开始AOF重写。</li>
+<li>检查是否AOF是否打开且运行结束，是的话运行<code>backgroundRewriteDoneHandler</code>函数，它会把新请求的<strong>重写缓存</strong>写入到临时文件（write系统调用），然后重命名临时文件为正式的AOF文件，根据AOF设置决定是立刻fsync还是后台fsync将数据从内核缓冲区真正刷新到这一文件中，最后后台关闭旧文件，避免阻塞服务器。如果刷新缓存或者函数内其他操作出现错误，都会清除缓存、删除临时文件，等待下次重写。</li>
+<li>及时处理AOF文件过大问题：用两个变量维护了AOF文件当前大小和上一次更新的大小，如果增长超过了我们设定的百分比（默认100%），则启动AOF重写，将最新的命令写进新的AOF文件。</li>
+</ol>
+<p><strong>注意：Redis 2.6是定时检查是否完成，较新版本应该是子进程完成后通过信号通知父进程。</strong></p>
+<h2 id="AOF-vs-RDB"><a href="#AOF-vs-RDB" class="headerlink" title="AOF vs RDB"></a>AOF vs RDB</h2><table>
+<thead>
+<tr>
+<th></th>
+<th>AOF</th>
+<th>RDB</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>数据安全性</td>
+<td>可以配置always或every second，故障时丢失数据较少。</td>
+<td>完整的数据备份，时间间隔一般会设置得更大，故障时丢失数据较多。</td>
+</tr>
+<tr>
+<td>恢复速度</td>
+<td>AOF文件容易变得比较大，恢复速度较慢。</td>
+<td>RDB是二进制压缩存储，恢复速度较快。</td>
+</tr>
+<tr>
+<td>适合场景</td>
+<td>保证数据不丢失。</td>
+<td>数据备份。</td>
+</tr>
+</tbody></table>
+<p>在实际生产中，根据业务场景综合以上因素选择持久化的选项，也可以两者结合使用。</p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/about/">关于</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%A2%84%E5%A4%87%E7%9F%A5%E8%AF%86"><span class="toc-number">1.</span> <span class="toc-text">预备知识</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#AOF%E5%AE%9E%E7%8E%B0"><span class="toc-number">2.</span> <span class="toc-text">AOF实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%91%BD%E4%BB%A4%E6%B7%BB%E5%8A%A0%E5%88%B0AOF"><span class="toc-number">2.1.</span> <span class="toc-text">命令添加到AOF</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B7%BB%E5%8A%A0%E5%88%B0%E7%BC%93%E5%AD%98"><span class="toc-number">2.1.1.</span> <span class="toc-text">添加到缓存</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BC%93%E5%AD%98%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="toc-number">2.1.2.</span> <span class="toc-text">缓存的实现</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%B7%E6%96%B0%E5%88%B0%E7%A3%81%E7%9B%98"><span class="toc-number">2.1.3.</span> <span class="toc-text">刷新到磁盘</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#AOF%E5%8A%A0%E8%BD%BD"><span class="toc-number">2.2.</span> <span class="toc-text">AOF加载</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#AOF%E9%87%8D%E5%86%99%E6%B5%81%E7%A8%8B"><span class="toc-number">2.3.</span> <span class="toc-text">AOF重写流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A1%E6%A3%80%E4%BB%BB%E5%8A%A1"><span class="toc-number">2.4.</span> <span class="toc-text">巡检任务</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#AOF-vs-RDB"><span class="toc-number">3.</span> <span class="toc-text">AOF vs RDB</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&text=Redis数据持久化"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&title=Redis数据持久化"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&is_video=false&description=Redis数据持久化"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Redis数据持久化&body=Check out this article: http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&title=Redis数据持久化"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&title=Redis数据持久化"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&title=Redis数据持久化"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&title=Redis数据持久化"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&name=Redis数据持久化&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/&t=Redis数据持久化"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2020-2024
+    seineo
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
