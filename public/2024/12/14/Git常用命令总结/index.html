@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="Git提交提交变更Git仓库的每次提交可以看作是对当前目录所有文件的一次快照，但是并不是盲目地复制保存整个目录，而是会对比当前版本和上一版本，存储差异化的内容作为这一次的提交记录。那为了可以回溯之前的版本，Git的每次提交节点都会有一个父节点。   创建分支git分支可以让我们可以并行地进行代码的开发&#x2F;修复工作，假设我们现在在main分支，那么可以有两种方法创建新分支bugFix： 12">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Git常用命令总结">
+<meta property="og:url" content="http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/index.html">
+<meta property="og:site_name" content="seineo">
+<meta property="og:description" content="Git提交提交变更Git仓库的每次提交可以看作是对当前目录所有文件的一次快照，但是并不是盲目地复制保存整个目录，而是会对比当前版本和上一版本，存储差异化的内容作为这一次的提交记录。那为了可以回溯之前的版本，Git的每次提交节点都会有一个父节点。   创建分支git分支可以让我们可以并行地进行代码的开发&#x2F;修复工作，假设我们现在在main分支，那么可以有两种方法创建新分支bugFix： 12">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://oss.seineo.cn/images/202412251008297.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202412161730059.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202412161636215.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202412161717552.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202412161717844.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202412251008387.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202412251008559.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202412251008695.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202412251008837.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202412251008848.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202412251008999.png">
+<meta property="og:image" content="https://oss.seineo.cn/images/202412251008012.png">
+<meta property="article:published_time" content="2024-12-14T02:07:57.000Z">
+<meta property="article:modified_time" content="2024-12-25T02:08:21.598Z">
+<meta property="article:author" content="seineo">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://oss.seineo.cn/images/202412251008297.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Git常用命令总结</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2024/07/27/Redis%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&text=Git常用命令总结"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&title=Git常用命令总结"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&is_video=false&description=Git常用命令总结"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Git常用命令总结&body=Check out this article: http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&title=Git常用命令总结"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&title=Git常用命令总结"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&title=Git常用命令总结"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&title=Git常用命令总结"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&name=Git常用命令总结&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&t=Git常用命令总结"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Git%E6%8F%90%E4%BA%A4"><span class="toc-number">1.</span> <span class="toc-text">Git提交</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8F%90%E4%BA%A4%E5%8F%98%E6%9B%B4"><span class="toc-number">1.1.</span> <span class="toc-text">提交变更</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E5%88%86%E6%94%AF"><span class="toc-number">1.2.</span> <span class="toc-text">创建分支</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%90%88%E5%B9%B6%E5%88%86%E6%94%AF"><span class="toc-number">1.3.</span> <span class="toc-text">合并分支</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%87%8D%E5%86%99%E6%8F%90%E4%BA%A4%E5%8E%86%E5%8F%B2"><span class="toc-number">1.4.</span> <span class="toc-text">重写提交历史</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8F%90%E4%BA%A4%E6%A0%91%E4%BF%AE%E6%94%B9"><span class="toc-number">2.</span> <span class="toc-text">提交树修改</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A7%BB%E5%8A%A8HEAD"><span class="toc-number">2.1.</span> <span class="toc-text">移动HEAD</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%92%A4%E9%94%80%E5%8F%98%E6%9B%B4"><span class="toc-number">2.2.</span> <span class="toc-text">撤销变更</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%8D%E5%88%B6%E6%8F%90%E4%BA%A4"><span class="toc-number">2.3.</span> <span class="toc-text">复制提交</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%9C%E7%A8%8B%E4%BB%93%E5%BA%93"><span class="toc-number">3.</span> <span class="toc-text">远程仓库</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE"><span class="toc-number">3.1.</span> <span class="toc-text">获取数据</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8E%A8%E9%80%81%E6%95%B0%E6%8D%AE"><span class="toc-number">3.2.</span> <span class="toc-text">推送数据</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">4.</span> <span class="toc-text">参考</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        Git常用命令总结
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">seineo</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2024-12-14T02:07:57.000Z" class="dt-published" itemprop="datePublished">2024-12-14</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <h2 id="Git提交"><a href="#Git提交" class="headerlink" title="Git提交"></a>Git提交</h2><h3 id="提交变更"><a href="#提交变更" class="headerlink" title="提交变更"></a>提交变更</h3><p>Git仓库的每次提交可以看作是对当前目录所有文件的一次快照，但是并不是盲目地复制保存整个目录，而是会对比当前版本和上一版本，存储差异化的内容作为这一次的提交记录。那为了可以回溯之前的版本，Git的每次提交节点都会有一个父节点。</p>
+<img src="https://oss.seineo.cn/images/202412251008297.png" alt="截屏2024-12-16 16.09.40" style="zoom:50%;" />
+
+<h3 id="创建分支"><a href="#创建分支" class="headerlink" title="创建分支"></a>创建分支</h3><p>git分支可以让我们可以并行地进行代码的开发&#x2F;修复工作，假设我们现在在<code>main</code>分支，那么可以有两种方法创建新分支<code>bugFix</code>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">方法一</span></span><br><span class="line">git branch bugFix</span><br><span class="line">git checkout bugFix</span><br><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">方法二</span></span><br><span class="line">git checkout -b bugFix</span><br></pre></td></tr></table></figure>
+
+<h3 id="合并分支"><a href="#合并分支" class="headerlink" title="合并分支"></a>合并分支</h3><p>在新分支开发新功能或修复bug之后，我们会需要将工作合并到原来的分支上，这时候有两种做法：</p>
+<ul>
+<li><p><code>git merge</code>：<code>git merge</code>是会创建一个新的提交节点，它包含的两个分支合并后的修改，也就是会将这两个分支的最新节点作为父节点。</p>
+<center><img src="https://oss.seineo.cn/images/202412161730059.png" alt="截屏2024-12-16 16.28.37" style="zoom:50%;" /></center>
+</li>
+<li><p><code>git rebase</code>：<code>rebase</code>的字面意思就是将一系列提交记录“变基”，指的是复制一系列提交记录，放到另一个分支上。</p>
+<center><img src="https://oss.seineo.cn/images/202412161636215.png" alt="截屏2024-12-16 16.36.34" style="zoom:50%;" /></center>
+
+<p>如上图所示，假定我们在bugFix分支上提交了一个hash为<code>C3</code>的节点，然后我们在这个分支使用<code>git rebase main</code>命令，那么命令会找到bugFix和main分支的共同祖先节点（即<code>C1</code>节点），将bugFix分支在这之后的提交记录（<code>C3</code>节点）放到main分支上作为新的提交记录，可以看到<code>rebase</code>相比于<code>merge</code>会让提交记录更简洁与线性。</p>
+</li>
+</ul>
+<h3 id="重写提交历史"><a href="#重写提交历史" class="headerlink" title="重写提交历史"></a>重写提交历史</h3><p>当着手开发一个新的特性时，我们通常首先会基于主分支创建一个特性分支，例如使用<code>git checkout -b feat</code>命令来创建名为<code>feat</code>的特性分支。在这个特性分支上，我们不断地进行代码的编写、修改和提交，这个过程中可能会产生一系列较为杂乱的提交记录，这可能是由于频繁地修复小问题、调整代码结构或者阶段性地保存工作进度等原因导致的。</p>
+<p>当特性开发完成，准备将其合并回主分支时，为了让代码的提交历史更加清晰、简洁，易于其他团队成员理解和后续的代码维护，我们就可以利用<code>git rebase -i</code>命令来重写提交历史。比如，当我们在特性分支上已经进行了多次提交，想要对最近的 5 次提交记录进行整理时，可以使用<code>git rebase -i HEAD~5</code>命令，进入交互式的<code>rebase</code>操作界面。在如下的界面，我们可以通过<strong>修改每行开头的单词</strong>来对提交记录进行诸如合并、编辑提交信息等操作，也可以直接<strong>修改行之间的顺序</strong>来对提交重新排序，从而使得提交历史更加符合逻辑和项目的开发流程：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">pick c50221f commit B</span><br><span class="line">pick 73deeed commit C</span><br><span class="line">pick d9623b0 commit D</span><br><span class="line">pick e7c7111 commit E</span><br><span class="line">pick 74199ce commit F</span><br><span class="line"></span><br><span class="line"># 变基 ef13725..74199ce 到 ef13725（5 个提交）</span><br><span class="line">#</span><br><span class="line"># 命令:</span><br><span class="line"># p, pick &lt;提交&gt; = 使用提交</span><br><span class="line"># r, reword &lt;提交&gt; = 使用提交，但修改提交说明</span><br><span class="line"># e, edit &lt;提交&gt; = 使用提交，进入 shell 以便进行提交修补</span><br><span class="line"># s, squash &lt;提交&gt; = 使用提交，但融合到前一个提交</span><br><span class="line"># f, fixup &lt;提交&gt; = 类似于 &quot;squash&quot;，但丢弃提交说明日志</span><br><span class="line"># x, exec &lt;命令&gt; = 使用 shell 运行命令（此行剩余部分）</span><br><span class="line"># b, break = 在此处停止（使用 &#x27;git rebase --continue&#x27; 继续变基）</span><br><span class="line"># d, drop &lt;提交&gt; = 删除提交</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
+
+<p>在本地完成了对特性分支提交历史的整理后，我们可以将修改后的分支强制推送到远程仓库，使用如<code>git push -f o/feat</code>的命令，以覆盖远程也同样杂乱的提交记录。最后，为了确保特性分支与主分支的最新代码保持一致，并能够顺利地合并到主分支，我们还需要执行<code>git rebase main</code>命令，将主分支上的最新提交合并到特性分支上，解决可能出现的代码冲突后，特性分支就可以以一个整洁、清晰的提交历史状态合并回主分支，为整个项目的代码库维护和团队协作提供更好的基础。</p>
+<p>完整的git命令示例如下：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">git checkout -b feat</span><br><span class="line">git commit</span><br><span class="line">git push</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">...</span></span><br><span class="line">git rebase -i HEAD~5</span><br><span class="line">git push -f o/feat </span><br><span class="line">git rebase main</span><br></pre></td></tr></table></figure>
+
+<h2 id="提交树修改"><a href="#提交树修改" class="headerlink" title="提交树修改"></a>提交树修改</h2><h3 id="移动HEAD"><a href="#移动HEAD" class="headerlink" title="移动HEAD"></a>移动HEAD</h3><p>HEAD默认指向当前分支的最新提交记录，如HEAD-&gt;main, main-&gt;C1，我们可以通过<code>git checkout &lt;hash&gt;</code>来修改HEAD的指向，此处的<code>hash</code>并不需要是提交节点的完整哈希值，只需要提供能够唯一标识提交记录的前几个字符即可，一般使用4个字符，如<code>git checkout fed1</code>。也可以使用相对引用：</p>
+<ul>
+<li><p><code>^</code> 表示向上移动一个提交记录，如<code>main^</code>表示将HEAD指向切换到<code>main</code>分支最新节点的父节点。</p>
+<center><img src="https://oss.seineo.cn/images/202412161717552.png" alt="截屏2024-12-16 17.17.05" style="zoom:50%;" /></center>
+</li>
+<li><p><code>~&lt;num&gt;</code>表示向上移动多个提交记录，如<code>HEAD~3</code>表示将HEAD指向切换到往前数第三个提交节点。</p>
+<center><img src="https://oss.seineo.cn/images/202412161717844.png" alt="截屏2024-12-16 17.17.29" style="zoom: 50%;" /></center></li>
+</ul>
+<p>	   </p>
+<h3 id="撤销变更"><a href="#撤销变更" class="headerlink" title="撤销变更"></a>撤销变更</h3><p>撤销变更有两种方式：<code>git reset</code>和<code>git revert</code>。</p>
+<ul>
+<li><p><code>git reset</code>：适合本地提交，回退到指定版本，后面的提交被撤销，如<code>git reset HEAD~1</code>，则是撤销本地最新提交。</p>
+</li>
+<li><p><code>git revert</code>：适合有远程分支的提交。会创建一个新提交，代表撤销制定变更后的提交。如下图<code>git revert HEAD</code>后，会创建一个<code>C2&#39;</code>的提交代表撤销了<code>C2</code>变更的提交，revert后即可推送到远程来共享撤销结果。</p>
+<img src="https://oss.seineo.cn/images/202412251008387.png" alt="截屏2024-12-20 10.53.24" style="zoom:50%;" /></li>
+</ul>
+<h3 id="复制提交"><a href="#复制提交" class="headerlink" title="复制提交"></a>复制提交</h3><p>有时候我们会想要“把这个提交放到这里，那个提交放到那里”这样的移动效果，这时候可以使用<code>git cherry-pick &lt;hash&gt;</code>，这个命令会将指定的提交复制到当前位置（<code>HEAD</code>）下面。比如我们在<code>C5</code>处使用<code>git cherry-pick C2 C4</code>，则会得到下图的效果：</p>
+<img src="https://oss.seineo.cn/images/202412251008559.png" alt="截屏2024-12-20 11.01.00" style="zoom:50%;" />
+
+<h2 id="远程仓库"><a href="#远程仓库" class="headerlink" title="远程仓库"></a>远程仓库</h2><p>基础知识：在<code>git clone</code>之后，本地仓库会出现远程分支如<code>origin/main</code>，<strong>远程分支反映了远程仓库在最后一次你与它通信时的状态</strong>。</p>
+<h3 id="获取数据"><a href="#获取数据" class="headerlink" title="获取数据"></a>获取数据</h3><p>如下图所示，<code>git fetch</code>会完成两步：</p>
+<ol>
+<li>从远程仓库下载本地仓库缺失的提交记录（此处的<code>C2</code>、<code>C3</code>）</li>
+<li>更新本地仓库远程分支的指针（此处的<code>o/main</code>）</li>
+</ol>
+<p><strong>注意</strong>：<code>git fetch</code>并不会改变本地仓库本地分支（此处的<code>main*</code>）的内容，所以其实此时本地仓库并没有与远程仓库同步。</p>
+<img src="https://oss.seineo.cn/images/202412251008695.png" alt="截屏2024-12-20 11.18.27" style="zoom:50%;" />
+
+<h3 id="推送数据"><a href="#推送数据" class="headerlink" title="推送数据"></a>推送数据</h3><p>在使用<code>git push</code>推送到远程时，可能会出现冲突的情况。如下图所示，你在本地基于<code>C1</code>开发了<code>C3</code>，但是你的同事可能已经将远程仓库更新为了<code>C2</code>，此时你推送就会失败。</p>
+<img src="https://oss.seineo.cn/images/202412251008837.png" alt="截屏2024-12-20 12.53.26" style="zoom:50%;" />
+
+<p>为了解决这一问题，我们需要在本地解决完冲突后再推送。如下图所示，我们可以先拉取远程仓库的数据，可以看到本地就有<code>main</code>和<code>o/main</code>两个分支，那么就可以按之前“合并分支”小节提到的，使用rebase或者merge来合并分支。</p>
+<img src="https://oss.seineo.cn/images/202412251008848.png" alt="截屏2024-12-24 19.37.31" style="zoom:50%;" />
+
+<p>rebase方式：</p>
+<img src="https://oss.seineo.cn/images/202412251008999.png" alt="截屏2024-12-24 19.35.36" style="zoom:50%;" />
+
+<p>merge方式：</p>
+<img src="https://oss.seineo.cn/images/202412251008012.png" alt="截屏2024-12-24 19.39.16" style="zoom:50%;" />
+
+<p>代码冲突时常发生，如果每次都需要<code>git fetch</code> + <code>git merge/rebase</code>就有些繁琐了，因此git提供以下两个命令来代替：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git pull # git fetch + git merge</span><br><span class="line">git pull --rebase # git fetch + git rebase </span><br></pre></td></tr></table></figure>
+
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://learngitbranching.js.org/?locale=zh_CN">Learn Git Branching</a></li>
+<li><a target="_blank" rel="noopener" href="https://waynerv.com/posts/git-rebase-intro/">git rebase 用法详解与工作原理</a></li>
+</ul>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/about/">关于</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Git%E6%8F%90%E4%BA%A4"><span class="toc-number">1.</span> <span class="toc-text">Git提交</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8F%90%E4%BA%A4%E5%8F%98%E6%9B%B4"><span class="toc-number">1.1.</span> <span class="toc-text">提交变更</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E5%88%86%E6%94%AF"><span class="toc-number">1.2.</span> <span class="toc-text">创建分支</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%90%88%E5%B9%B6%E5%88%86%E6%94%AF"><span class="toc-number">1.3.</span> <span class="toc-text">合并分支</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%87%8D%E5%86%99%E6%8F%90%E4%BA%A4%E5%8E%86%E5%8F%B2"><span class="toc-number">1.4.</span> <span class="toc-text">重写提交历史</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8F%90%E4%BA%A4%E6%A0%91%E4%BF%AE%E6%94%B9"><span class="toc-number">2.</span> <span class="toc-text">提交树修改</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A7%BB%E5%8A%A8HEAD"><span class="toc-number">2.1.</span> <span class="toc-text">移动HEAD</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%92%A4%E9%94%80%E5%8F%98%E6%9B%B4"><span class="toc-number">2.2.</span> <span class="toc-text">撤销变更</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%8D%E5%88%B6%E6%8F%90%E4%BA%A4"><span class="toc-number">2.3.</span> <span class="toc-text">复制提交</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%9C%E7%A8%8B%E4%BB%93%E5%BA%93"><span class="toc-number">3.</span> <span class="toc-text">远程仓库</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE"><span class="toc-number">3.1.</span> <span class="toc-text">获取数据</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8E%A8%E9%80%81%E6%95%B0%E6%8D%AE"><span class="toc-number">3.2.</span> <span class="toc-text">推送数据</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">4.</span> <span class="toc-text">参考</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&text=Git常用命令总结"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&title=Git常用命令总结"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&is_video=false&description=Git常用命令总结"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Git常用命令总结&body=Check out this article: http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&title=Git常用命令总结"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&title=Git常用命令总结"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&title=Git常用命令总结"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&title=Git常用命令总结"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&name=Git常用命令总结&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=http://example.com/2024/12/14/Git%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E6%80%BB%E7%BB%93/&t=Git常用命令总结"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2020-2024
+    seineo
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/seineo">项目</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
